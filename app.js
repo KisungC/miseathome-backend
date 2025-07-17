@@ -3,9 +3,10 @@ const dotenv = require('dotenv');
 dotenv.config({ path: './env/.env' });
 
 const express = require('express');
-const db = require('./database');
+const {db} = require('./database');
 const homeRoutes = require('./routes/home.routes');
 const authRoutes = require('./routes/auth.routes')
+
 
 const app = express();
 
