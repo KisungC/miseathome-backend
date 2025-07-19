@@ -39,6 +39,16 @@ const validateSignupDTO = (req, res, next) => {
         }
     }
 
+    if(firstname.length >= 50)
+    {
+        throw new BaseError("First name is too long. Has to be less than 50 characters.", 400, "REACHED_MAX_FIRST_NAME")
+    }
+    if(lastname.length >= 50)
+    {
+        throw new BaseError("Last name is too long. Has to be less than 50 characters.", 400, "REACHED_MAX_LAST_NAME")
+
+    }
+
     if (skillLevel != 'Beginner' && skillLevel && 'Home Cook' && skillLevel != 'Professional') {
         throw new BaseError("Invalid skill level. Choose Beginner, Home Cook or Professional.", 400, "INVALID_SKILL_LEVEL_CHOICE")
     }

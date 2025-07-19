@@ -1,4 +1,4 @@
-const {findByEmail, findByUsername, createUser} = require('../models/user.models');
+const {findByEmail, findByUsername, createUser} = require('../models/user.model');
 const {EmailTakenError} = require('../errors/EmailTakenError')
 const {UsernameTakenError} = require('../errors/UsernameTakenError')
 
