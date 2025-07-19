@@ -1,4 +1,4 @@
-const BaseError = require('./BaseError')
+const {BaseError} = require('./BaseError')
 
 class EmailTakenError extends BaseError
 {

@@ -1,4 +1,3 @@
-const express = require('express')
 const db = require('../database')
 
 const createUser = async(userData) =>
@@ -23,7 +22,7 @@ const findByEmail = async(email) =>
 {
     try
     {
-        const query = `SELECT * FROM users WHERE email = $1`
+        const query = `SELECT user_name, email FROM users WHERE email = $1`
 
         const result = await db.oneOrNone(query, email)
 
@@ -40,7 +39,7 @@ const findByUsername = async(username) =>
 {
     try
     {
-        const query = `SELECT * FROM users WHERE username = $1`
+        const query = `SELECT user_name, email FROM users WHERE user_name = $1`
 
         const result = await db.oneOrNone(query, username)
 
