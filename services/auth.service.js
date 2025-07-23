@@ -79,4 +79,8 @@ const sendEmail = async (email,url) => {
   }
 }
 
-module.exports = { registerUser };
+module.exports = { 
+  registerUser,
+  createUrlToken,
+  sendEmail
+ };
