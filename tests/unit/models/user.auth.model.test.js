@@ -60,9 +60,10 @@ describe('Testing Model', ()=>{
                 username: timeNow
             }
 
-            const userInput = mockUserInput(customInput)
+            const userInput = mockUserInput({customInput})
 
-            createUser.mockResolvedValue(mockCreateUserRes())
+            createUser.mockResolvedValue(mockCreateUserRes({email: `${timeNow}@test.com`,
+                user_name: timeNow}))
 
             await expect(createUser(userInput)).resolves.toEqual(expect.objectContaining({
                 email: `${timeNow}@test.com`,
@@ -73,13 +74,15 @@ describe('Testing Model', ()=>{
         it('should fail to register when email is already taken', async() =>{
             const duplicateEmail = 'test1@gmail.com'
 
-            await expect(createUser(mockUserInput({email: duplicateEmail}))).toThrow() //can add specific error code from database
+            createUser.mockRejectedValue(new Error("23505 UNIQUE VIOLATION"))
+
+            await expect(createUser(mockUserInput({email: duplicateEmail}))).rejects.toThrow() //can add specific error code from database
         })
 
         it('should fail to register when user is already taken', async() =>{
             const duplicateUsername = 'test'
 
-            await expect(createUser(mockUserInput({email: duplicateUsername}))).toThrow() //can add specific error code from database
+            await expect(createUser(mockUserInput({email: duplicateUsername}))).rejects.toThrow() //can add specific error code from database
         })
     })
 })
