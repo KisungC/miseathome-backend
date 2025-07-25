@@ -110,7 +110,7 @@ The registration feature includes email verification with JWT and SendGrid.
 5. Create a verification URL with the token as a query param
 6. Send verification link using **SendGrid**
 
-![Registration Flow](./assets/registration-flow.png)
+![Registration Flow](./assets/registration_flow.png)
 
 This approach ensures secure email verification and token replay protection.
 
