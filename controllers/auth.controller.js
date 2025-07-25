@@ -1,3 +1,4 @@
+const { BaseError } = require('../errors/BaseError');
 const { registerUser } = require('../services/auth.service')
 
 const signup = async (req, res) => {
