@@ -1,4 +1,4 @@
-const mockUserInput = (overrides = {}) =>(
+const mockUserRegistrationInput = (overrides = {}) =>(
 {
     email: `test@example.com`,
     password: 'ValidPass123!',
@@ -9,4 +9,4 @@ const mockUserInput = (overrides = {}) =>(
     ...overrides
 });
 
-module.exports = {mockUserInput}
+module.exports = {mockUserRegistrationInput}

@@ -2,10 +2,10 @@ const db = require('../database')
 
 const createUser = async(userData) =>
 {
-    const {email, password, username, firstname, lastname, skillLevel} = userData
+    const {email, password, username, firstname, lastname, skillLevel, jti} = userData
     try{
-        const query = `INSERT INTO users (email, user_name, first_name, last_name, password, skill_level) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email`
-        const values = [email, password, username, firstname, lastname, skillLevel]
+        const query = `INSERT INTO users (email, user_name, first_name, last_name, password, skill_level, jti) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, email`
+        const values = [email, password, username, firstname, lastname, skillLevel, jti]
 
         const result = await db.one(query, values)
 
