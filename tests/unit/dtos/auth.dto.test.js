@@ -1,5 +1,5 @@
 const { validateSignupDTO } = require('../../../dtos/auth.dto');
-const {mockUserInput} = require('../../utils/factories/mockUserInput')
+const {mockUserRegistrationInput} = require('../../utils/factories/mockUserInput')
 
 //email, password, username, firstname, lastname, skillLevel
 
@@ -14,7 +14,7 @@ describe('Auth DTO Validation', () => {
     describe('Email Validation', () => {
 
         it('should return 400 if email is missing', () => {
-            const { email, ...rest } = mockUserInput() //exclude email
+            const { email, ...rest } = mockUserRegistrationInput() //exclude email
             const req = {
                 body: {
                     ...rest
@@ -27,7 +27,7 @@ describe('Auth DTO Validation', () => {
         describe('Invalid Email Format', () => {
             it('should return 400 if email is missing @', () => {
                 const req = {
-                    body: mockUserInput({email: 'testATtest.com'})
+                    body: mockUserRegistrationInput({email: 'testATtest.com'})
                 }
 
                 // const consoleSpy = jest.spyOn(console, 'log')  ------------------------ THIS IS HOW TO LOG IN JEST!
@@ -40,14 +40,14 @@ describe('Auth DTO Validation', () => {
 
             it('should return 400 if email is missing .', () => {
                 const req = {
-                    body: mockUserInput({email: 'test@testcom'})
+                    body: mockUserRegistrationInput({email: 'test@testcom'})
                 }
                 expect(() => validateSignupDTO(req, res, next)).toThrow('Email is invalid.')
             })
 
             it('should return 400 if email has less than 2 letters after .', () => {
                 const req = {
-                    body: mockUserInput({email: 'test@test.c'})
+                    body: mockUserRegistrationInput({email: 'test@test.c'})
                 }
 
                 expect(() => validateSignupDTO(req, res, next)).toThrow('Email is invalid.')
@@ -57,7 +57,7 @@ describe('Auth DTO Validation', () => {
 
     describe('Password Validation', () => {
         it('should return 400 if password is missing', () => {
-            const { password, ...rest } = mockUserInput()
+            const { password, ...rest } = mockUserRegistrationInput()
             const req = {
                 body: {
                     ...rest
@@ -69,7 +69,7 @@ describe('Auth DTO Validation', () => {
         describe('Invalid Password', () => {
             it('should return 400 if password is not complex', () => {
                 const req = {
-                    body: mockUserInput({password: 'password1234'})
+                    body: mockUserRegistrationInput({password: 'password1234'})
                 }
 
                 expect(() => validateSignupDTO(req, res, next)).toThrow('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.')
@@ -77,7 +77,7 @@ describe('Auth DTO Validation', () => {
 
             it('should return 400 if password is too short', () => {
                 const req = {
-                    body: mockUserInput({password: '12'})
+                    body: mockUserRegistrationInput({password: '12'})
                 }
                 expect(() => validateSignupDTO(req, res, next)).toThrow('Password is too short.')
             })
@@ -85,7 +85,7 @@ describe('Auth DTO Validation', () => {
             it('should return 400 if password is too long', () => {
                 const password = '0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789'
                 const req = {
-                    body: mockUserInput({password: password})
+                    body: mockUserRegistrationInput({password: password})
                 }
                 expect(() => validateSignupDTO(req, res, next)).toThrow('Password is too long.')
             })
@@ -94,7 +94,7 @@ describe('Auth DTO Validation', () => {
 
     describe('Username Validation', () => {
         it('should return 400 if username is empty', () => {
-            const { skillLevel, ...rest } = mockUserInput()
+            const { skillLevel, ...rest } = mockUserRegistrationInput()
             const req = {
                 body:
                 {
@@ -106,7 +106,7 @@ describe('Auth DTO Validation', () => {
         describe('Invalid Username', () => {
             it('should return 400 if username is too short', () => {
                 const req = {
-                    body: mockUserInput({username: '12'})
+                    body: mockUserRegistrationInput({username: '12'})
                 }
 
                 expect(() => validateSignupDTO(req, res, next)).toThrow('Username is too short.')
@@ -114,7 +114,7 @@ describe('Auth DTO Validation', () => {
             it('should return 400 if username is too long', () => {
                 const username = '1234567890123456789012345678901234567890'
                 const req = {
-                    body: mockUserInput({username:username})
+                    body: mockUserRegistrationInput({username:username})
                 }
                 expect(username.length).not.toBeLessThanOrEqual(38)
                 expect(()=>validateSignupDTO(req,res,next)).toThrow('Username is too long.')
@@ -124,7 +124,7 @@ describe('Auth DTO Validation', () => {
     })
 
     it('should return 201 when user data is valid', () => {
-        const req = { body: mockUserInput() }
+        const req = { body: mockUserRegistrationInput() }
         expect(() => validateSignupDTO(req, res, next)).not.toThrow()
         expect(next).toHaveBeenCalled()
     })

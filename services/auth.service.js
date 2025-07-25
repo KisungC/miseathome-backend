@@ -10,6 +10,8 @@ const jwt = require('jsonwebtoken');
 const { findByEmail, findByUsername, createUser } = require('../models/user.model');
 const { EmailTakenError } = require('../errors/EmailTakenError')
 const { UsernameTakenError } = require('../errors/UsernameTakenError')
+const { EmptyEmailError } = require('../errors/EmptyEmailError');
+const { BaseError } = require('../errors/BaseError');
 
 const registerUser = async (userData) => {
   try {
@@ -27,12 +29,10 @@ const registerUser = async (userData) => {
 
     userData.jti = jti
 
-    console.log(`after adding jti to userData: `, userData)
-
     const res = await createUser(userData);
 
     const {email, userid} = res
-
+    
     const urlToken = createUrlToken(email, userid, res.jti)
 
     await sendEmail(res.email, urlToken)
@@ -44,10 +44,24 @@ const registerUser = async (userData) => {
 };
 
 const createUrlToken = (email, userid, jti) => {
+  if(!email)
+  {
+    throw new EmptyEmailError()
+  }
+
+  if(!userid)
+  {
+    throw new BaseError("internal error: userid not found", 500, "USERID_NOT_FOUND")
+  }
+
+  if (!jti) {
+  throw new BaseError("internal error: jti not found", 500, "JTI_NOT_FOUND");
+  }
+
   const baseUrl = new URL('https://miseathome.ca/auth')
 
   const tokenJson = {
-    id: userid,
+    userid: userid,
     email: email,
   }
 
@@ -61,6 +75,15 @@ const createUrlToken = (email, userid, jti) => {
 }
 
 const sendEmail = async (email,url) => {
+  if(!email)
+  {
+    throw new BaseError("internal error: email is missing",500,"MISSING_EMAIL")
+  }
+  if(!url)
+  {
+    throw new BaseError("internal error: url is missing",500,"MISSING_URL_TOKEN")
+  }
+
   const msg = {
     to: email,
     from: 'miseathome@gmail.com',

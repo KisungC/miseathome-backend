@@ -1,9 +1,8 @@
-jest.mock('../../../database')
 jest.mock('../../../models/user.model')
 
 const {createUser, findByEmail, findByUsername} = require('../../../models/user.model')
-const {mockUser, mockCreateUserRes} = require('../../utils/factories/mockUser')
-const { mockUserInput } = require('../../utils/factories/mockUserInput')
+const { mockCreateUserRes} = require('../../utils/factories/mockUser')
+const { mockUserRegistrationInput } = require('../../utils/factories/mockUserInput')
 
 
 describe('Testing Model', ()=>{
@@ -11,7 +10,7 @@ describe('Testing Model', ()=>{
         it('should be successful when finding a user with email', async ()=>{
             const email = 'test1@gmail.com'
 
-            const expectedResult = mockUser({
+            const expectedResult = mockCreateUserRes({
                 user_name: 'test',
                 email: 'test1@gmail.com'
             })
@@ -30,6 +29,7 @@ describe('Testing Model', ()=>{
             findByEmail.mockResolvedValue(null)
 
             await expect(findByEmail(email)).resolves.toBeNull()
+            
         })
     })
 
@@ -37,7 +37,7 @@ describe('Testing Model', ()=>{
         it('should be successful to find a user by username', async()=>{
             const username = 'test'
 
-            const expectedResult = mockUser({
+            const expectedResult = mockCreateUserRes({
                 user_name: 'test',
                 email: 'test1@gmail.com'
             })
@@ -60,7 +60,7 @@ describe('Testing Model', ()=>{
                 username: timeNow
             }
 
-            const userInput = mockUserInput({customInput})
+            const userInput = mockUserRegistrationInput({customInput})
 
             createUser.mockResolvedValue(mockCreateUserRes({email: `${timeNow}@test.com`,
                 user_name: timeNow}))
@@ -76,13 +76,13 @@ describe('Testing Model', ()=>{
 
             createUser.mockRejectedValue(new Error("23505 UNIQUE VIOLATION"))
 
-            await expect(createUser(mockUserInput({email: duplicateEmail}))).rejects.toThrow() //can add specific error code from database
+            await expect(createUser(mockUserRegistrationInput({email: duplicateEmail}))).rejects.toThrow() //can add specific error code from database
         })
 
         it('should fail to register when user is already taken', async() =>{
             const duplicateUsername = 'test'
 
-            await expect(createUser(mockUserInput({email: duplicateUsername}))).rejects.toThrow() //can add specific error code from database
+            await expect(createUser(mockUserRegistrationInput({email: duplicateUsername}))).rejects.toThrow() //can add specific error code from database
         })
     })
 })
