@@ -3,11 +3,13 @@ const app = require("../../app")
 
 describe('POST /auth/signup', ()=>{
     it('should return 400 if email is missing',async()=>{
+        const uniqueValue = Date.now()
         const res = await request(app)
         .post('auth/signup')
         .send({
             password: 'ValidPass123!',
-            username: 'tester',
+            email:`${uniqueValue}@gmail.com`,
+            username: uniqueValue,
             firstname: 'Test',
             lastname: 'User',
             skillLevel: 'Beginner'

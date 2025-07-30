@@ -51,7 +51,7 @@ const validateSignupDTO = (req, res, next) => {
 
     }
 
-    if (skillLevel != 'Beginner' && skillLevel && 'Home Cook' && skillLevel != 'Professional') {
+    if (skillLevel != 'Beginner' && skillLevel != 'Home Cook' && skillLevel != 'Professional') {
         throw new BaseError("Invalid skill level. Choose Beginner, Home Cook or Professional.", 400, "INVALID_SKILL_LEVEL_CHOICE")
     }
 

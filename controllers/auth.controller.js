@@ -7,7 +7,7 @@ const signup = async (req, res) => {
     res.status(201).json({
       message: "User successfully created",
       data: {
-        id: user.id,
+        id: user.userid,
         email: user.email
       }
     });

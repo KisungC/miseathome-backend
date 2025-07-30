@@ -33,7 +33,7 @@ const registerUser = async (userData) => {
 
     const {email, userid} = res
     
-    const urlToken = createUrlToken(email, userid, res.jti)
+    const urlToken = createUrlToken(email, userid, jti)
 
     await sendEmail(res.email, urlToken)
 
