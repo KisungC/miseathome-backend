@@ -7,10 +7,12 @@ const {db} = require('./database');
 const homeRoutes = require('./routes/home.routes');
 const authRoutes = require('./routes/auth.routes');
 const errorHandler = require('./middleware/errorHandler')
+const cors = require('cors')
 
 
 const app = express();
 
+app.use(cors())
 app.use(express.json());
 app.use('/', homeRoutes);
 app.use('/auth',authRoutes);
