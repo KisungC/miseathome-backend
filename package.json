@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@sendgrid/mail": "^8.1.5",
+    "@types/jest": "^30.0.0",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
