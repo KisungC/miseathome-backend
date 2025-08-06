@@ -7,7 +7,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 
-const { findByEmail, findByUsername, createUser } = require('../models/user.model');
+const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified } = require('../models/user.model');
 const { EmailTakenError } = require('../errors/EmailTakenError')
 const { UsernameTakenError } = require('../errors/UsernameTakenError')
 const { EmptyEmailError } = require('../errors/EmptyEmailError');
@@ -99,8 +99,24 @@ const sendEmail = async (email, url) => {
   }
 }
 
+const verifyEmail = async (token) => {
+  try {
+    const { userid, jti } = jwt.verify(token, process.env.JWT_SECRET_KEY)
+    const storedJti = await getJtiForUser(userid)
+    if (jti !== storedJti) {
+      throw new BaseError('Token is invalid or already used', 400, 'INVALID_JTI')
+    }
+    await setEmailVerified(userid)
+    return { success: true, userid }
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') throw new BaseError("Link is expired!", 401, "TOKEN_EXPIRED")
+    throw err
+  }
+}
+
 module.exports = {
   registerUser,
   createUrlToken,
-  sendEmail
+  sendEmail,
+  verifyEmail
 };
