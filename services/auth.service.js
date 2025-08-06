@@ -31,8 +31,8 @@ const registerUser = async (userData) => {
 
     const res = await createUser(userData);
 
-    const {email, userid} = res
-    
+    const { email, userid } = res
+
     const urlToken = createUrlToken(email, userid, jti)
 
     await sendEmail(res.email, urlToken)
@@ -44,18 +44,16 @@ const registerUser = async (userData) => {
 };
 
 const createUrlToken = (email, userid, jti) => {
-  if(!email)
-  {
+  if (!email) {
     throw new EmptyEmailError()
   }
 
-  if(!userid)
-  {
+  if (!userid) {
     throw new BaseError("internal error: userid not found", 500, "USERID_NOT_FOUND")
   }
 
   if (!jti) {
-  throw new BaseError("internal error: jti not found", 500, "JTI_NOT_FOUND");
+    throw new BaseError("internal error: jti not found", 500, "JTI_NOT_FOUND");
   }
 
   const baseUrl = new URL('https://miseathome.ca/auth')
@@ -74,14 +72,12 @@ const createUrlToken = (email, userid, jti) => {
   return finalUrl
 }
 
-const sendEmail = async (email,url) => {
-  if(!email)
-  {
-    throw new BaseError("internal error: email is missing",500,"MISSING_EMAIL")
+const sendEmail = async (email, url) => {
+  if (!email) {
+    throw new BaseError("internal error: email is missing", 500, "MISSING_EMAIL")
   }
-  if(!url)
-  {
-    throw new BaseError("internal error: url is missing",500,"MISSING_URL_TOKEN")
+  if (!url) {
+    throw new BaseError("internal error: url is missing", 500, "MISSING_URL_TOKEN")
   }
 
   const msg = {
@@ -89,7 +85,8 @@ const sendEmail = async (email,url) => {
     from: 'miseathome@gmail.com',
     subject: 'User Verification',
     text: `Please click on this link: ${url} to validate your account. This link expires in 20 minutes`,
-    html: '<strong>and easy to do anywhere, even with Node.js</strong>',
+    html: `<p>Please click on the link below to validate your account. This link expires in 20 minutes:</p>
+    <a href="${url}">${url}</a>`
   }
 
   try {
@@ -102,8 +99,8 @@ const sendEmail = async (email,url) => {
   }
 }
 
-module.exports = { 
+module.exports = {
   registerUser,
   createUrlToken,
   sendEmail
- };
+};
