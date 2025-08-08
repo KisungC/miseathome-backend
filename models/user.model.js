@@ -49,9 +49,9 @@ const findUserWithPasswordByEmail = async(email) =>
     try{
         const query = `SELECT password FROM users WHERE email = $1`
 
-        const result = await db.one(query, [email])
+        const result = await db.oneOrNone(query, [email])
 
-        return result.password
+        return result?.password || null;
     }catch(err)
     {
         console.error('DB Error', err)

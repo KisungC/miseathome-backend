@@ -29,9 +29,8 @@ const verifyEmailToken = async (req, res) => {
 const resendEmailToken = async (req, res) => {
   try {
     const email = req.body.email
-    const result = await resendEmailVerification(email)
+    await resendEmailVerification(email)
     sendSuccessResponse(res, 200, 'Email verification link sent successfully', { success: true, email: email })
-    return
   } catch (err) {
     console.error('Resending verification link to email failed.')
     if (handleBaseError(res, err)) return
@@ -43,7 +42,7 @@ const signin = async (req, res) => {
   try {
     const {email, password} = req.body
     const result = await signinService(email,password)
-    sendSuccessResponse(res, 200, "Sign in successful", result)
+    sendSuccessResponse(res, 200, "Sign in successful.", result)
   } catch (err) {
     console.error('Sign in authentication failed.', err)
     if (handleBaseError(res, err)) return
