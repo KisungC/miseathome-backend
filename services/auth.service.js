@@ -7,7 +7,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 
-const { findByEmail, findByUsername, createUser } = require('../models/user.model');
+const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified } = require('../models/user.model');
 const { EmailTakenError } = require('../errors/EmailTakenError')
 const { UsernameTakenError } = require('../errors/UsernameTakenError')
 const { EmptyEmailError } = require('../errors/EmptyEmailError');
@@ -35,7 +35,7 @@ const registerUser = async (userData) => {
 
     const urlToken = createUrlToken(email, userid, jti)
 
-    await sendEmail(res.email, urlToken)
+    await sendVerificationEmail(res.email, urlToken)
 
     return res;
   } catch (err) {
@@ -72,7 +72,7 @@ const createUrlToken = (email, userid, jti) => {
   return finalUrl
 }
 
-const sendEmail = async (email, url) => {
+const sendVerificationEmail = async (email, url) => {
   if (!email) {
     throw new BaseError("internal error: email is missing", 500, "MISSING_EMAIL")
   }
@@ -99,8 +99,41 @@ const sendEmail = async (email, url) => {
   }
 }
 
+const verifyEmail = async (token) => {
+  try {
+    if(!token)
+    {
+      throw new BaseError('Internal server error: Token is required',400,'TOKEN_MISSING')
+    }
+    const { userid, jti } = jwt.verify(token, process.env.JWT_SECRET_KEY)
+    const storedJti = await getJtiForUser(userid)
+    if (jti !== storedJti) {
+      throw new BaseError('Token is invalid or already used', 400, 'INVALID_JTI')
+    }
+    await setEmailVerified(userid)
+    return { success: true, userid }
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') throw new BaseError("Link is expired!", 401, "TOKEN_EXPIRED")
+    throw err
+  }
+}
+
+const resendEmailVerification = async(email) =>{
+  try{
+    const tokenUrl = createUrlToken(email)
+    await sendVerificationEmail(email,tokenUrl)
+
+    return {success:true}
+  }catch(err)
+  {
+    throw err
+  }
+}
+
 module.exports = {
   registerUser,
   createUrlToken,
-  sendEmail
+  sendVerificationEmail,
+  verifyEmail,
+  resendEmailVerification
 };
