@@ -1,6 +1,6 @@
 const { handleBaseError, sendErrorResponse } = require("../util/handleResponse/errorHandler")
 const { sendSuccessResponse } = require("../util/handleResponse/successHandler")
-const { registerUser, verifyEmail } = require('../services/auth.service')
+const { registerUser, verifyEmail, resendEmailVerification } = require('../services/auth.service')
 
 const signup = async (req, res) => {
   try {
@@ -16,14 +16,7 @@ const signup = async (req, res) => {
 
 const verifyEmailToken = async (req, res) => {
   try {
-    if (!req.body.token) {
-      return res.status(400).json({ error: 'Token is required' });
-    }
     const result = await verifyEmail(req.body.token)
-
-    if (!result.success) {
-      return res.status(400).json({ error: 'Invalid or already-used token' });
-    }
 
     if (result.success) {
       sendSuccessResponse(res, 200, "User successfully verified", { userid: result.userid })
@@ -37,9 +30,27 @@ const verifyEmailToken = async (req, res) => {
   }
 }
 
-//const signin
+const resendEmailToken = async(req,res)=>{
+  try{
+    const email = req.body.email
+    const result = await resendEmailVerification(email)
+    if(result.success) sendSuccessResponse(res, 200, 'Email verification link sent successfully', {success: true, email:email})
+    return
+  }catch(err)
+  {
+    console.error('Resending verification link to email failed')
+    if(handleBaseError(res, err)) return
+    sendErrorResponse(res, err)
+  }
+}
+
+const signin = async(req,res)
+{
+  
+}
 
 module.exports = {
   signup,
-  verifyEmailToken
+  verifyEmailToken,
+  resendEmailToken
 };
