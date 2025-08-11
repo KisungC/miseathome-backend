@@ -1,9 +1,9 @@
-jest.mock('../../../database/index')
+jest.mock('../../../database/index', () => require('../../utils/mockDb'))
 
-const db = require('../../../database/index')
+const db = require('../../utils/mockDb')
 const { createUser, findByEmail, findByUsername, findUserWithPasswordByEmail } = require('../../../models/user.model')
 const { mockCreateUserRes } = require('../../utils/factories/mockUser')
-const { mockUserRegistrationInput } = require('../../utils/factories/mockUserInput')
+const { mockUserRegistrationInputJTI } = require('../../utils/factories/mockUserInput')
 
 describe('Testing Model', () => {
     describe('Testing findByEmail', () => {
@@ -60,9 +60,9 @@ describe('Testing Model', () => {
                 username: timeNow
             }
 
-            const userInput = mockUserRegistrationInput({ customInput })
+            const userInput = mockUserRegistrationInputJTI({ customInput })
 
-            db.oneOrNone.mockResolvedValue(mockCreateUserRes({
+            db.one.mockResolvedValue(mockCreateUserRes({
                 email: `${timeNow}@test.com`,
                 user_name: timeNow
             }))
@@ -76,15 +76,15 @@ describe('Testing Model', () => {
         it('should fail to register when email is already taken', async () => {
             const duplicateEmail = 'test1@gmail.com'
 
-            db.oneOrNone.mockRejectedValue(new Error("23505 UNIQUE VIOLATION"))
+            db.one.mockRejectedValue(new Error("23505 UNIQUE VIOLATION"))
 
-            await expect(createUser(mockUserRegistrationInput({ email: duplicateEmail }))).rejects.toThrow() //can add specific error code from database
+            await expect(createUser(mockUserRegistrationInputJTI({ email: duplicateEmail }))).rejects.toThrow() //can add specific error code from database
         })
 
         it('should fail to register when user is already taken', async () => {
             const duplicateUsername = 'test'
 
-            await expect(createUser(mockUserRegistrationInput({ email: duplicateUsername }))).rejects.toThrow() //can add specific error code from database
+            await expect(createUser(mockUserRegistrationInputJTI({ email: duplicateUsername }))).rejects.toThrow() //can add specific error code from database
         })
     })
 
