@@ -58,6 +58,9 @@ describe('Testing registerUser', () => {
 
         await expect(registerUser(input)).rejects.toThrow(UsernameTakenError)
     })
+    it('should throw error if req.body is missing', async () => {
+        await expect(registerUser(null)).rejects.toThrow("Server error! please try again later.")
+    })
 })
 
 describe('Testing createUrlToken', () => {

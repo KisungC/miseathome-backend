@@ -42,18 +42,6 @@ describe('Testing signup from controller', () => {
             message: "User successfully created"
         }));
     })
-    it('should throw error when req.body is undefined', async () => {
-        const req = {
-            body: undefined
-        }
-
-        await signup(req, res)
-
-        expect(res.status).toHaveBeenCalledWith(500);
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-            error: 'Signup failed'
-        }));
-    })
 })
 
 describe('Testing signin from controller', () => {

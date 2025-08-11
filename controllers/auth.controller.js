@@ -1,6 +1,7 @@
 const { handleBaseError, sendErrorResponse } = require("../util/handleResponse/errorHandler")
 const { sendSuccessResponse } = require("../util/handleResponse/successHandler")
 const { registerUser, verifyEmail, resendEmailVerification, signinService } = require('../services/auth.service')
+const { BaseError } = require("../errors/BaseError")
 
 const signup = async (req, res) => {
   try {
