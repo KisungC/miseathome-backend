@@ -64,7 +64,7 @@ const getJtiForUser = async (userid) => {
         const query = `SELECT jti FROM users WHERE userid = $1`
         const result = await db.oneOrNone(query, [userid])
 
-        return result?.jti
+        return result ? result.jti : null
     }
     catch (err) {
         console.error('DB Error', err)
