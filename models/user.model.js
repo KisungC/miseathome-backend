@@ -30,6 +30,17 @@ const findByEmail = async (email) => {
     }
 }
 
+const getUserProfileByEmail = async (email) => {
+    try {
+        const query = `SELECT userid, user_name, first_name, last_name, skill_level FROM users WHERE email = $1`
+        const result = await db.oneOrNone(query, [email])
+        return result
+    } catch (err) {
+        console.error('DB Error', err)
+        throw err;
+    }
+}
+
 const findByUsername = async (username) => {
     try {
         const query = `SELECT user_name, email FROM users WHERE user_name = $1`
@@ -44,16 +55,14 @@ const findByUsername = async (username) => {
     }
 }
 
-const findUserWithPasswordByEmail = async(email) =>
-{
-    try{
+const findUserWithPasswordByEmail = async (email) => {
+    try {
         const query = `SELECT password FROM users WHERE email = $1`
 
         const result = await db.oneOrNone(query, [email])
 
         return result?.password || null;
-    }catch(err)
-    {
+    } catch (err) {
         console.error('DB Error', err)
         throw err
     }
@@ -93,5 +102,6 @@ module.exports = {
     findByUsername,
     getJtiForUser,
     setEmailVerified,
-    findUserWithPasswordByEmail
+    findUserWithPasswordByEmail,
+    getUserProfileByEmail
 }

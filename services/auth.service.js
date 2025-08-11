@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified, findUserWithPasswordByEmail } = require('../models/user.model');
+const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified, findUserWithPasswordByEmail, getUserProfileByEmail } = require('../models/user.model');
 const { EmailTakenError } = require('../errors/EmailTakenError')
 const { UsernameTakenError } = require('../errors/UsernameTakenError')
 const { EmptyEmailError } = require('../errors/EmptyEmailError');
@@ -144,9 +144,10 @@ const signinService = async(email,password) =>{
     const dbPassword = await findUserWithPasswordByEmail(email)
     const isMatch = await bcrypt.compare(password, dbPassword)
 
-    //load user profile here
+    //load user profile 
+    const userProfile = await getUserProfileByEmail(email)
 
-    if(isMatch) return {success:true, message: "Signin successful."}
+    if(isMatch) return {userProfile: userProfile}
 
     throw new BaseError("Sign in unsuccessful.",400, "AUTHENTICATION_UNSUCCESSFUL")
   }catch(err){
