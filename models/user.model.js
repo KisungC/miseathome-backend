@@ -85,6 +85,8 @@ const setEmailVerified = async (userid) => {
     }
 }
 
+//implement get user profile (exclude email)
+
 module.exports = {
     createUser,
     findByEmail,
