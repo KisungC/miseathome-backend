@@ -61,7 +61,7 @@ const findUserWithPasswordByEmail = async(email) =>
 
 const getJtiForUser = async (userid) => {
     try {
-        const query = `SELECT jti FROM users WHERE userid = $1 `
+        const query = `SELECT jti FROM users WHERE userid = $1`
         const result = await db.oneOrNone(query, [userid])
 
         return result?.jti

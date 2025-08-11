@@ -1,9 +1,10 @@
 jest.mock('../../../database/index', () => require('../../utils/mockDb'))
 
 const db = require('../../utils/mockDb')
-const { createUser, findByEmail, findByUsername, findUserWithPasswordByEmail } = require('../../../models/user.model')
+const { createUser, findByEmail, findByUsername, findUserWithPasswordByEmail, getJtiForUser, setEmailVerified } = require('../../../models/user.model')
 const { mockCreateUserRes } = require('../../utils/factories/mockUser')
 const { mockUserRegistrationInputJTI } = require('../../utils/factories/mockUserInput')
+const { valid } = require('joi')
 
 describe('Testing Model', () => {
     describe('Testing findByEmail', () => {
@@ -116,11 +117,49 @@ describe('Testing Model', () => {
             );
         })
 
-        // describe('Testing getJtiForUser', ()=>{
+    })
+    describe('Testing getJtiForUser', () => {
+        it("should return jti for user when userid is valid", async () => {
+            const validUserId = 1
+            db.oneOrNone.mockResolvedValue({ jti: "someUUID" })
 
-        // })
+            const result = await getJtiForUser(validUserId)
 
-        // describe('Testing setEmailVerified', ()=>{
+            expect(result).toBe("someUUID")
+            expect(db.oneOrNone).toHaveBeenCalledWith(`SELECT jti FROM users WHERE userid = $1`, [validUserId])
+        })
+        it("should return null if userid is invalid", async () => {
+            const invalidID = -1
+            db.oneOrNone.mockResolvedValue(null)
+            const result = await getJtiForUser(invalidID)
 
+            expect(result).toBeNull()
+            expect(db.oneOrNone).toHaveBeenCalledWith(`SELECT jti FROM users WHERE userid = $1`, [invalidID])
+        })
+    })
+
+    describe('Testing setEmailVerified', () => {
+        it('should set email verified to true if userid is valid', async () => {
+            const validID = 1
+            const returnObj = {
+                userid: 1,
+                email: "test1@test.com",
+                user_name: "testName"
+            }
+            db.one.mockResolvedValue(returnObj)
+            const result = await setEmailVerified(validID)
+
+            expect(result).toEqual(returnObj)
+            expect(db.one).toHaveBeenCalledWith(`UPDATE users SET email_verified = TRUE, jti = null WHERE userid = $1 RETURNING userid, email, user_name`, [validID])
+        })
+        it('should return undefined if userid is invalid', async () => {
+            const invalidID = -1
+            db.one.mockResolvedValue(null)
+            const result = await setEmailVerified(invalidID)
+
+            expect(result).toBeNull()
+            expect(db.one).toHaveBeenCalledWith(`UPDATE users SET email_verified = TRUE, jti = null WHERE userid = $1 RETURNING userid, email, user_name`, [invalidID])
+
+        })
     })
 })
