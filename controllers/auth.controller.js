@@ -29,8 +29,8 @@ const verifyEmailToken = async (req, res) => {
 
 const resendEmailToken = async (req, res) => {
   try {
-    const email = req.body.email
-    await resendEmailVerification(email)
+    const {email, userid} = req.body
+    await resendEmailVerification(email, userid)
     sendSuccessResponse(res, 200, 'Email verification link sent successfully', { success: true, email: email })
   } catch (err) {
     console.error('Resending verification link to email failed.')

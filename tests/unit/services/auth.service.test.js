@@ -1,28 +1,47 @@
-jest.mock('../../../models/user.model')
+jest.mock('../../../models/user.model', () => ({
+    getJtiForUser: jest.fn().mockResolvedValue("someJTI"),
+    setEmailVerified: jest.fn().mockResolvedValue({
+        userid: 1,
+        email: "test1@test.com",
+        user_name: "testName"
+    }),
+    findByEmail: jest.fn(),
+    findByUsername: jest.fn(),
+    createUser: jest.fn(),
+    findUserWithPasswordByEmail: jest.fn()
+}))
 jest.mock('@sendgrid/mail');
 jest.mock('bcrypt');
 jest.mock('../../../database/index', () => require('../../utils/mockDb'));
+jest.mock('jsonwebtoken', () => {
+    const realJWT = jest.requireActual('jsonwebtoken');
+    return {
+        ...realJWT,
+        verify: jest.fn(),
+    };
+});
 
 const jwt = require('jsonwebtoken');
 const db = require('../../utils/mockDb');
 const sgMail = require('@sendgrid/mail');
 const bcrypt = require('bcrypt')
 
-const { findByEmail, findByUsername, createUser, findUserWithPasswordByEmail } = require('../../../models/user.model')
-const { registerUser, createUrlToken, sendVerificationEmail, signinService } = require('../../../services/auth.service')
+const userModel = require('../../../models/user.model')
+const authService = require('../../../services/auth.service');
+const { registerUser, createUrlToken, sendVerificationEmail, signinService, verifyEmail, resendEmailVerification } = require('../../../services/auth.service')
 const { mockCreateUserRes } = require('../../utils/factories/mockUser')
 const { mockUserRegistrationInput } = require('../../utils/factories/mockUserInput')
 const { EmailTakenError } = require('../../../errors/EmailTakenError')
 const { UsernameTakenError } = require('../../../errors/UsernameTakenError');
 const { BaseError } = require('../../../errors/BaseError');
 
-findByEmail.mockImplementation((email) => {
+userModel.findByEmail.mockImplementation((email) => {
     const existingEmail = 'test1@gmail.com' //email existing in database
     if (email == existingEmail) return Promise.resolve(mockCreateUserRes())
     return Promise.resolve(null)
 })
 
-findByUsername.mockImplementation((username) => {
+userModel.findByUsername.mockImplementation((username) => {
     const existingUsername = 'test'
     if (username == existingUsername) return Promise.resolve(mockCreateUserRes())
     return Promise.resolve(null)
@@ -38,7 +57,7 @@ describe('Testing registerUser', () => {
         })
         const expectedUser = mockCreateUserRes()
 
-        createUser.mockResolvedValue(expectedUser)
+        userModel.createUser.mockResolvedValue(expectedUser)
 
         await expect(registerUser(input)).resolves.toEqual(expect.objectContaining({
             signup_date: expect.any(String),
@@ -135,7 +154,7 @@ describe('Testing signinService', () => {
         const passwordInDb = "hashedPasswordInDb";
 
         // Mock the DB and bcrypt dependencies
-        findUserWithPasswordByEmail.mockResolvedValue(passwordInDb);
+        userModel.findUserWithPasswordByEmail.mockResolvedValue(passwordInDb);
         bcrypt.compare.mockResolvedValue(true);
 
         const result = await signinService(email, password);
@@ -154,9 +173,60 @@ describe('Testing signinService', () => {
         const password = "wrongpassword";
         const passwordInDb = "hashedPasswordInDb";
 
-        findUserWithPasswordByEmail.mockResolvedValue(passwordInDb);
+        userModel.findUserWithPasswordByEmail.mockResolvedValue(passwordInDb);
         bcrypt.compare.mockResolvedValue(false)
 
         await expect(signinService(email, password)).rejects.toThrow('Sign in unsuccessful.')
     })
+})
+
+describe('Testing verifyEmail', () => {
+    it('should return an object {success: true, userid: userid} when the token is valid', async () => {
+        const validToken = "someJTI"
+
+        jwt.verify.mockReturnValueOnce({ userid: 1, jti: "someJTI" })
+
+        const result = await verifyEmail(validToken)
+
+        expect(result).toEqual({ success: true, userid: 1 })
+    })
+    it('should return error code 401 if the token is missing', async () => {
+        await expect(verifyEmail(null)).rejects.toThrow('Internal server error: Token is required.')
+    })
+    it('should return error code 401 if the jti is not matching', async () => {
+        jwt.verify.mockReturnValueOnce({ userid: 1, jti: "invalidJTI" })
+        await expect(verifyEmail('sometoken')).rejects.toThrow('Token is invalid or already used.')
+        expect(userModel.getJtiForUser).toHaveBeenCalledWith(1)
+    })
+    it('should throw BaseError with TOKEN_EXPIRED when token is expired', async () => {
+        const expiredError = new Error('jwt expired');
+        expiredError.name = 'TokenExpiredError';
+
+        jwt.verify.mockImplementation(() => { throw expiredError });
+
+        await expect(verifyEmail('expiredToken'))
+            .rejects
+            .toThrow("Link is expired.")
+    });
+})
+
+describe('resendEmailVerification with deps', () => {
+  it('should return { success: true } for valid email and userid', async () => {
+    const mockCreateUrlToken = jest.fn().mockReturnValue('mockedURL');
+    const mockSendVerificationEmail = jest.fn().mockResolvedValue();
+
+    const deps = {
+      createUrlToken: mockCreateUrlToken,
+      sendVerificationEmail: mockSendVerificationEmail
+    };
+
+    const email = 'test@example.com';
+    const userid = 1;
+
+    const result = await resendEmailVerification(email, userid, deps);
+
+    expect(result).toEqual({ success: true });
+    expect(mockCreateUrlToken).toHaveBeenCalledTimes(1);
+    expect(mockSendVerificationEmail).toHaveBeenCalledTimes(1);
+  });
 })

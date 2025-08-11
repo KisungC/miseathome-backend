@@ -37,9 +37,9 @@ const registerUser = async (userData) => {
 
     const { email, userid } = res
 
-    const urlToken = createUrlToken(email, userid, jti)
+    const urlToken = createUrlToken(email,userid, jti)
 
-    await sendVerificationEmail(res.email, urlToken)
+    await sendVerificationEmail(email, urlToken)
 
     return res;
   } catch (err) {
@@ -107,25 +107,26 @@ const verifyEmail = async (token) => {
   try {
     if(!token)
     {
-      throw new BaseError('Internal server error: Token is required',400,'TOKEN_MISSING')
+      throw new BaseError('Internal server error: Token is required.',401,'TOKEN_MISSING')
     }
     const { userid, jti } = jwt.verify(token, process.env.JWT_SECRET_KEY)
     const storedJti = await getJtiForUser(userid)
     if (jti !== storedJti) {
-      throw new BaseError('Token is invalid or already used', 400, 'INVALID_JTI')
+      throw new BaseError('Token is invalid or already used.', 401, 'INVALID_JTI')
     }
     await setEmailVerified(userid)
-    return { success: true, userid }
+    return { success: true, userid: userid }
   } catch (err) {
-    if (err.name === 'TokenExpiredError') throw new BaseError("Link is expired!", 401, "TOKEN_EXPIRED")
+    if (err.name === 'TokenExpiredError') throw new BaseError("Link is expired.", 401, "TOKEN_EXPIRED")
     throw err
   }
 }
 
-const resendEmailVerification = async(email) =>{
+const resendEmailVerification = async(email, userid, deps = { createUrlToken, sendVerificationEmail }) =>{
   try{
-    const tokenUrl = createUrlToken(email)
-    await sendVerificationEmail(email,tokenUrl)
+    const jti = uuidv4()
+    const tokenUrl = deps.createUrlToken(email, userid,jti)
+    await deps.sendVerificationEmail(email,tokenUrl)
 
     return {success:true}
   }catch(err)
@@ -142,6 +143,8 @@ const signinService = async(email,password) =>{
   try{
     const dbPassword = await findUserWithPasswordByEmail(email)
     const isMatch = await bcrypt.compare(password, dbPassword)
+
+    //load user profile here
 
     if(isMatch) return {success:true, message: "Signin successful."}
 
