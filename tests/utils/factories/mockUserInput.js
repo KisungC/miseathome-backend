@@ -16,4 +16,16 @@ const mockUserSignIn = (overrides = {}) =>(
     ...overrides
 });
 
-module.exports = {mockUserRegistrationInput, mockUserSignIn}
+const mockUserRegistrationInputJTI = (overrides = {}) =>(
+{
+    email: `test@example.com`,
+    password: 'ValidPass123!',
+    username: 'tester',
+    firstname: 'Test',
+    lastname: 'User',
+    skillLevel: 'Beginner',
+    jti:"someUUID",
+    ...overrides
+});
+
+module.exports = {mockUserRegistrationInput, mockUserRegistrationInputJTI, mockUserSignIn}
