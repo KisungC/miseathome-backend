@@ -18,7 +18,7 @@ const createUser = async (userData) => {
 
 const findByEmail = async (email) => {
     try {
-        const query = `SELECT user_name, email FROM users WHERE email = $1`
+        const query = `SELECT userid, user_name, email FROM users WHERE email = $1`
 
         const result = await db.oneOrNone(query, [email])
 
@@ -41,6 +41,21 @@ const findByUsername = async (username) => {
     catch (err) {
         console.error('DB Error', err)
         throw err;
+    }
+}
+
+const findUserWithPasswordByEmail = async(email) =>
+{
+    try{
+        const query = `SELECT password FROM users WHERE email = $1`
+
+        const result = await db.oneOrNone(query, [email])
+
+        return result?.password || null;
+    }catch(err)
+    {
+        console.error('DB Error', err)
+        throw err
     }
 }
 
@@ -75,5 +90,6 @@ module.exports = {
     findByEmail,
     findByUsername,
     getJtiForUser,
-    setEmailVerified
+    setEmailVerified,
+    findUserWithPasswordByEmail
 }

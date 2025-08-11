@@ -1,21 +1,20 @@
 jest.mock('../../../models/user.model')
-
-jest.mock('@sendgrid/mail', () => {
-    return {
-        setApiKey: jest.fn(),
-        send: jest.fn(),
-    };
-});
+jest.mock('@sendgrid/mail');
+jest.mock('bcrypt');
+jest.mock('../../../database/index', () => require('../../utils/mockDb'));
 
 const jwt = require('jsonwebtoken');
+const db = require('../../utils/mockDb');
 const sgMail = require('@sendgrid/mail');
+const bcrypt = require('bcrypt')
 
-const { findByEmail, findByUsername, createUser } = require('../../../models/user.model')
-const { registerUser, createUrlToken, sendVerificationEmail } = require('../../../services/auth.service')
+const { findByEmail, findByUsername, createUser, findUserWithPasswordByEmail } = require('../../../models/user.model')
+const { registerUser, createUrlToken, sendVerificationEmail, signinService } = require('../../../services/auth.service')
 const { mockCreateUserRes } = require('../../utils/factories/mockUser')
 const { mockUserRegistrationInput } = require('../../utils/factories/mockUserInput')
 const { EmailTakenError } = require('../../../errors/EmailTakenError')
-const { UsernameTakenError } = require('../../../errors/UsernameTakenError')
+const { UsernameTakenError } = require('../../../errors/UsernameTakenError');
+const { BaseError } = require('../../../errors/BaseError');
 
 findByEmail.mockImplementation((email) => {
     const existingEmail = 'test1@gmail.com' //email existing in database
@@ -107,7 +106,7 @@ describe('Testing createUrlToken', () => {
     })
 })
 
-describe('Testing sendEmail', () => {
+describe('Testing sendVerificationEmail', () => {
     it('should send email with valid url', async () => {
         sgMail.send.mockResolvedValue({});
 
@@ -126,5 +125,38 @@ describe('Testing sendEmail', () => {
     })
     it('should throw if url is undefined', async () => {
         await expect(sendVerificationEmail("email@email.com", undefined)).rejects.toThrow()
+    })
+})
+
+describe('Testing signinService', () => {
+    it('should sign in successfully if email and password is correct', async () => {
+        const email = "existing@email.com";
+        const password = "userTypedPassword";
+        const passwordInDb = "hashedPasswordInDb";
+
+        // Mock the DB and bcrypt dependencies
+        findUserWithPasswordByEmail.mockResolvedValue(passwordInDb);
+        bcrypt.compare.mockResolvedValue(true);
+
+        const result = await signinService(email, password);
+
+        expect(result).toEqual({ success: true, message: "Signin successful." })
+    })
+    it('should throw when email is missing', async () => {
+        const email = ''
+        const password = "userTypedPassword";
+
+        await expect(signinService(email, password)).rejects.toThrow('Email and password are required.')
+
+    })
+    it('should throw when credentials are incorrect', async () => {
+        const email = "existing@email.com";
+        const password = "wrongpassword";
+        const passwordInDb = "hashedPasswordInDb";
+
+        findUserWithPasswordByEmail.mockResolvedValue(passwordInDb);
+        bcrypt.compare.mockResolvedValue(false)
+
+        await expect(signinService(email, password)).rejects.toThrow('Sign in unsuccessful.')
     })
 })

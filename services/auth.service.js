@@ -6,8 +6,9 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
-const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified } = require('../models/user.model');
+const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified, findUserWithPasswordByEmail } = require('../models/user.model');
 const { EmailTakenError } = require('../errors/EmailTakenError')
 const { UsernameTakenError } = require('../errors/UsernameTakenError')
 const { EmptyEmailError } = require('../errors/EmptyEmailError');
@@ -133,10 +134,28 @@ const resendEmailVerification = async(email) =>{
   }
 }
 
+const signinService = async(email,password) =>{
+  if(!email || !password)
+  {
+    throw new BaseError('Email and password are required.',400,"EMAIL_PASSWORD_MISSING")
+  }
+  try{
+    const dbPassword = await findUserWithPasswordByEmail(email)
+    const isMatch = await bcrypt.compare(password, dbPassword)
+
+    if(isMatch) return {success:true, message: "Signin successful."}
+
+    throw new BaseError("Sign in unsuccessful.",400, "AUTHENTICATION_UNSUCCESSFUL")
+  }catch(err){
+    throw err
+  }
+}
+
 module.exports = {
   registerUser,
   createUrlToken,
   sendVerificationEmail,
   verifyEmail,
-  resendEmailVerification
+  resendEmailVerification,
+  signinService
 };

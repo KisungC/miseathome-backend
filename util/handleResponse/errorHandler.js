@@ -1,4 +1,4 @@
-const { BaseError } = require('./BaseError');
+const { BaseError } = require('../../errors/BaseError');
 
 /**
  * Handles thrown BaseError instances.
