@@ -15,6 +15,9 @@ const { BaseError } = require('../errors/BaseError');
 
 const registerUser = async (userData) => {
   try {
+    if(!userData) {
+      throw new BaseError("Server error! please try again later.",500,"UNABLE TO GET REQ.BODY")
+    } 
     const existingEmail = await findByEmail(userData.email)
     if (existingEmail) {
       throw new EmailTakenError()

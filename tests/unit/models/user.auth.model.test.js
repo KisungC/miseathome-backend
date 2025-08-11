@@ -4,7 +4,6 @@ const {createUser, findByEmail, findByUsername} = require('../../../models/user.
 const { mockCreateUserRes} = require('../../utils/factories/mockUser')
 const { mockUserRegistrationInput } = require('../../utils/factories/mockUserInput')
 
-
 describe('Testing Model', ()=>{
     describe('Testing findByEmail', ()=>{
         it('should be successful when finding a user with email', async ()=>{

@@ -11,7 +11,7 @@ const jwt = require('jsonwebtoken');
 const sgMail = require('@sendgrid/mail');
 
 const { findByEmail, findByUsername, createUser } = require('../../../models/user.model')
-const { registerUser, createUrlToken, sendEmail } = require('../../../services/auth.service')
+const { registerUser, createUrlToken, sendVerificationEmail } = require('../../../services/auth.service')
 const { mockCreateUserRes } = require('../../utils/factories/mockUser')
 const { mockUserRegistrationInput } = require('../../utils/factories/mockUserInput')
 const { EmailTakenError } = require('../../../errors/EmailTakenError')
@@ -58,6 +58,9 @@ describe('Testing registerUser', () => {
         const input = mockUserRegistrationInput({ username: existingUsername })
 
         await expect(registerUser(input)).rejects.toThrow(UsernameTakenError)
+    })
+    it('should throw error if req.body is missing', async () => {
+        await expect(registerUser(null)).rejects.toThrow("Server error! please try again later.")
     })
 })
 
@@ -111,16 +114,17 @@ describe('Testing sendEmail', () => {
         const email = "chung.kisung0@gmail.com"
         const url = "testurl.com/auth"
 
-        await expect(sendEmail(email, url)).resolves.not.toThrow()
+        await expect(sendVerificationEmail(email, url)).resolves.not.toThrow()
         expect(sgMail.send).toHaveBeenCalledWith(expect.objectContaining({
             to: email,
             from: 'miseathome@gmail.com',
             subject: 'User Verification',
             text: `Please click on this link: ${url} to validate your account. This link expires in 20 minutes`,
-            html: '<strong>and easy to do anywhere, even with Node.js</strong>',
+            html: `<p>Please click on the link below to validate your account. This link expires in 20 minutes:</p>
+    <a href="${url}">${url}</a>`
         }));
     })
-    it('should throw if url is undefined', async()=>{
-        await expect(sendEmail("email@email.com", undefined)).rejects.toThrow()
+    it('should throw if url is undefined', async () => {
+        await expect(sendVerificationEmail("email@email.com", undefined)).rejects.toThrow()
     })
 })
