@@ -12,6 +12,13 @@ const mockCreateUserRes = (overrides = {}) =>({
   ...overrides
 })
 
+const mockUserProfile = (overrides = {}) =>({
+  userid:1,
+  user_name: 'testuser',
+  first_name: 'fn',
+  last_name: 'ln',
+  skill_level: 'Beginner',
+  ...overrides
+})
 
-
-module.exports = { mockCreateUserRes };
+module.exports = { mockCreateUserRes, mockUserProfile };
