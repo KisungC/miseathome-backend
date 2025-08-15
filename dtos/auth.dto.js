@@ -1,6 +1,6 @@
 const { BaseError } = require("../errors/BaseError")
 
-const validateSignupDTO = (req, res, next) => {
+const validateSignupDTO = (req, _res, next) => {
     const { email, password, username, firstname, lastname, skillLevel, ...rest } = req.body
 
     if (Object.keys(rest).length > 0) {

@@ -6,8 +6,9 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
-const { findByEmail, findByUsername, createUser } = require('../models/user.model');
+const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified, findUserWithPasswordByEmail, getUserProfileByEmail } = require('../models/user.model');
 const { EmailTakenError } = require('../errors/EmailTakenError')
 const { UsernameTakenError } = require('../errors/UsernameTakenError')
 const { EmptyEmailError } = require('../errors/EmptyEmailError');
@@ -15,6 +16,9 @@ const { BaseError } = require('../errors/BaseError');
 
 const registerUser = async (userData) => {
   try {
+    if(!userData) {
+      throw new BaseError("Server error! please try again later.",500,"UNABLE TO GET REQ.BODY")
+    } 
     const existingEmail = await findByEmail(userData.email)
     if (existingEmail) {
       throw new EmailTakenError()
@@ -31,11 +35,11 @@ const registerUser = async (userData) => {
 
     const res = await createUser(userData);
 
-    const {email, userid} = res
-    
-    const urlToken = createUrlToken(email, userid, jti)
+    const { email, userid } = res
 
-    await sendEmail(res.email, urlToken)
+    const urlToken = createUrlToken(email,userid, jti)
+
+    await sendVerificationEmail(email, urlToken)
 
     return res;
   } catch (err) {
@@ -44,18 +48,16 @@ const registerUser = async (userData) => {
 };
 
 const createUrlToken = (email, userid, jti) => {
-  if(!email)
-  {
+  if (!email) {
     throw new EmptyEmailError()
   }
 
-  if(!userid)
-  {
+  if (!userid) {
     throw new BaseError("internal error: userid not found", 500, "USERID_NOT_FOUND")
   }
 
   if (!jti) {
-  throw new BaseError("internal error: jti not found", 500, "JTI_NOT_FOUND");
+    throw new BaseError("internal error: jti not found", 500, "JTI_NOT_FOUND");
   }
 
   const baseUrl = new URL('https://miseathome.ca/auth')
@@ -74,14 +76,12 @@ const createUrlToken = (email, userid, jti) => {
   return finalUrl
 }
 
-const sendEmail = async (email,url) => {
-  if(!email)
-  {
-    throw new BaseError("internal error: email is missing",500,"MISSING_EMAIL")
+const sendVerificationEmail = async (email, url) => {
+  if (!email) {
+    throw new BaseError("internal error: email is missing", 500, "MISSING_EMAIL")
   }
-  if(!url)
-  {
-    throw new BaseError("internal error: url is missing",500,"MISSING_URL_TOKEN")
+  if (!url) {
+    throw new BaseError("internal error: url is missing", 500, "MISSING_URL_TOKEN")
   }
 
   const msg = {
@@ -89,7 +89,8 @@ const sendEmail = async (email,url) => {
     from: 'miseathome@gmail.com',
     subject: 'User Verification',
     text: `Please click on this link: ${url} to validate your account. This link expires in 20 minutes`,
-    html: '<strong>and easy to do anywhere, even with Node.js</strong>',
+    html: `<p>Please click on the link below to validate your account. This link expires in 20 minutes:</p>
+    <a href="${url}">${url}</a>`
   }
 
   try {
@@ -102,8 +103,63 @@ const sendEmail = async (email,url) => {
   }
 }
 
-module.exports = { 
+const verifyEmail = async (token) => {
+  try {
+    if(!token)
+    {
+      throw new BaseError('Internal server error: Token is required.',401,'TOKEN_MISSING')
+    }
+    const { userid, jti } = jwt.verify(token, process.env.JWT_SECRET_KEY)
+    const storedJti = await getJtiForUser(userid)
+    if (jti !== storedJti) {
+      throw new BaseError('Token is invalid or already used.', 401, 'INVALID_JTI')
+    }
+    await setEmailVerified(userid)
+    return { success: true, userid: userid }
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') throw new BaseError("Link is expired.", 401, "TOKEN_EXPIRED")
+    throw err
+  }
+}
+
+const resendEmailVerification = async(email, userid, deps = { createUrlToken, sendVerificationEmail }) =>{
+  try{
+    const jti = uuidv4()
+    const tokenUrl = deps.createUrlToken(email, userid,jti)
+    await deps.sendVerificationEmail(email,tokenUrl)
+
+    return {success:true}
+  }catch(err)
+  {
+    throw err
+  }
+}
+
+const signinService = async(email,password) =>{
+  if(!email || !password)
+  {
+    throw new BaseError('Email and password are required.',400,"EMAIL_PASSWORD_MISSING")
+  }
+  try{
+    const dbPassword = await findUserWithPasswordByEmail(email)
+    const isMatch = await bcrypt.compare(password, dbPassword)
+
+    //load user profile 
+    const userProfile = await getUserProfileByEmail(email)
+
+    if(isMatch) return {userProfile: userProfile}
+
+    throw new BaseError("Sign in unsuccessful.",400, "AUTHENTICATION_UNSUCCESSFUL")
+  }catch(err){
+    throw err
+  }
+}
+
+module.exports = {
   registerUser,
   createUrlToken,
-  sendEmail
- };
+  sendVerificationEmail,
+  verifyEmail,
+  resendEmailVerification,
+  signinService
+};
