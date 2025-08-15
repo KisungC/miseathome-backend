@@ -85,11 +85,3 @@ describe('Testing signin from controller', () => {
         }));
     })
 })
-
-// describe('Testing verifyEmailToken from controller',()=>{
-//     //no test cases for this yet
-// })
-
-// describe('Testing resendEmailToken from controller'),()=>{
-//     //no test cases for this yet
-// }

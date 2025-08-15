@@ -1,3 +1,5 @@
+
+
 const jwt = require('jsonwebtoken');
 const db = require('../../utils/mockDb');
 const sgMail = require('@sendgrid/mail');
@@ -26,7 +28,10 @@ jest.mock('../../../models/user.model', () => ({
     getUserProfileByEmail: jest.fn().mockImplementation(() => Promise.resolve(mockUserProfile()))
 }))
 jest.mock('@sendgrid/mail');
-jest.mock('bcrypt');
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockResolvedValue('mock-hash'),
+  compare: jest.fn().mockResolvedValue(true)
+}));
 jest.mock('../../../database/index', () => require('../../utils/mockDb'));
 jest.mock('jsonwebtoken', () => {
     const realJWT = jest.requireActual('jsonwebtoken');

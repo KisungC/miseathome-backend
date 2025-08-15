@@ -32,7 +32,7 @@ const findByEmail = async (email) => {
 
 const getUserProfileByEmail = async (email) => {
     try {
-        const query = `SELECT userid, user_name, first_name, last_name, skill_level FROM users WHERE email = $1`
+        const query = `SELECT userid, user_name, first_name, last_name, skill_level, email_verified FROM users WHERE email = $1`
         const result = await db.oneOrNone(query, [email])
         return result
     } catch (err) {
