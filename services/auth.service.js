@@ -142,6 +142,7 @@ const signinService = async(email,password) =>{
   }
   try{
     const dbPassword = await findUserWithPasswordByEmail(email)
+    if(!dbPassword) throw new BaseError("Sign in unsuccessful.",400, "AUTHENTICATION_UNSUCCESSFUL")
     const isMatch = await bcrypt.compare(password, dbPassword)
 
     //load user profile 
