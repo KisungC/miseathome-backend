@@ -124,6 +124,8 @@ const verifyEmail = async (token) => {
 
 const resendEmailVerification = async(email, userid, deps = { createUrlToken, sendVerificationEmail, updateVerificationJtiByEmail }) =>{
   try{
+    const emailExists = await findByEmail(email)
+    if(!emailExists) throw new BaseError("Email not found.",400,"EMAIL_DOES_NOT_EXIST")
     const jti = uuidv4()
     const tokenUrl = deps.createUrlToken(email, userid,jti)
     await deps.sendVerificationEmail(email,tokenUrl)
