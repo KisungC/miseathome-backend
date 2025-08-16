@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified, findUserWithPasswordByEmail, getUserProfileByEmail } = require('../models/user.model');
+const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified, findUserWithPasswordByEmail, getUserProfileByEmail, updateVerificationJtiByEmail } = require('../models/user.model');
 const { EmailTakenError } = require('../errors/EmailTakenError')
 const { UsernameTakenError } = require('../errors/UsernameTakenError')
 const { EmptyEmailError } = require('../errors/EmptyEmailError');
@@ -122,12 +122,13 @@ const verifyEmail = async (token) => {
   }
 }
 
-const resendEmailVerification = async(email, userid, deps = { createUrlToken, sendVerificationEmail }) =>{
+const resendEmailVerification = async(email, userid, deps = { createUrlToken, sendVerificationEmail, updateVerificationJtiByEmail }) =>{
   try{
     const jti = uuidv4()
     const tokenUrl = deps.createUrlToken(email, userid,jti)
     await deps.sendVerificationEmail(email,tokenUrl)
-    
+    await deps.updateVerificationJtiByEmail(userid, jti)
+
     return {success:true}
   }catch(err)
   {

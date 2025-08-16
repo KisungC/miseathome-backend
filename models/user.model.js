@@ -68,6 +68,17 @@ const findUserWithPasswordByEmail = async (email) => {
     }
 }
 
+const updateVerificationJtiByEmail = async (userid, jti) => {
+    try {
+        const query = `UPDATE users SET jti = $1 WHERE userid = $2`
+        await db.none(query, [jti, userid])
+
+    } catch (err) {
+        console.error('DB Error', err)
+        throw err
+    }
+}
+
 const getJtiForUser = async (userid) => {
     try {
         const query = `SELECT jti FROM users WHERE userid = $1`
@@ -103,5 +114,6 @@ module.exports = {
     getJtiForUser,
     setEmailVerified,
     findUserWithPasswordByEmail,
-    getUserProfileByEmail
+    getUserProfileByEmail,
+    updateVerificationJtiByEmail
 }
