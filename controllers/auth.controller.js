@@ -17,7 +17,7 @@ const signup = async (req, res) => {
 
 const verifyEmailToken = async (req, res) => {
   try {
-    const result = await verifyEmail(req.body.token)
+    const result = await verifyEmail(req.query.token)
     sendSuccessResponse(res, 200, "User successfully verified", { userid: result.userid })
     //might need to update user profile in the future
   } catch (err) {

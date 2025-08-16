@@ -14,9 +14,9 @@ const mockCreateUserRes = (overrides = {}) =>({
 
 const mockUserProfile = (overrides = {}) =>({
   userid:1,
-  user_name: 'testuser',
-  first_name: 'fn',
-  last_name: 'ln',
+  user_name: 'tester',
+  first_name: 'Test',
+  last_name: 'User',
   skill_level: 'Beginner',
   ...overrides
 })

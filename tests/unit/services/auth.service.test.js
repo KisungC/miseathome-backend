@@ -100,7 +100,7 @@ describe('Testing createUrlToken', () => {
 
         const urlToken = new URL(createUrlToken(userInfo.email, userInfo.userid, mockJti))
 
-        expect(urlToken.origin + urlToken.pathname).toBe("https://miseathome.ca/auth")
+        expect(urlToken.origin + urlToken.pathname).toBe("https://miseathome.ca/auth/token-verify")
         expect(urlToken.toString()).toContain('?token=');
 
         const token = urlToken.searchParams.get('token')
