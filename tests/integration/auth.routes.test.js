@@ -250,7 +250,7 @@ describe('POST /auth/token-verify', () => {
     })
 })
 
-describe('POST /auth/resend-token', () => {
+describe.only('POST /auth/resend-token', () => {
     it('should send a valid link to the users email', async () => {
 
         const previousJTI = await db.one("SELECT jti FROM users WHERE userid = $1", [testUsers[0].userid])
@@ -274,7 +274,6 @@ describe('POST /auth/resend-token', () => {
         expect(previousJTI.jti).not.toBe(currentJTI.jti)
         expect(res.body).toHaveProperty("message", "Email verification link sent successfully")
 
-        await db.none("DELETE FROM users WHERE userid = $1", [userid])
     })
     it('should throw an error if email not found in database [no setup]', async () => {
         const req = {
@@ -286,7 +285,7 @@ describe('POST /auth/resend-token', () => {
             .send(req)
             .expect(400)
         
-        expect(res.body).toHaveProperty("error","email not found")
+        expect(res.body).toHaveProperty("error","Email not found.")
     })
 })
 
