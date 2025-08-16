@@ -29,8 +29,8 @@ jest.mock('../../../models/user.model', () => ({
 }))
 jest.mock('@sendgrid/mail');
 jest.mock('bcrypt', () => ({
-  hash: jest.fn().mockResolvedValue('mock-hash'),
-  compare: jest.fn().mockResolvedValue(true)
+    hash: jest.fn().mockResolvedValue('mock-hash'),
+    compare: jest.fn().mockResolvedValue(true)
 }));
 jest.mock('../../../database/index', () => require('../../utils/mockDb'));
 jest.mock('jsonwebtoken', () => {
@@ -163,9 +163,9 @@ describe('Testing signinService', () => {
         // Mock the DB and bcrypt dependencies
         userModel.findUserWithPasswordByEmail.mockResolvedValue(passwordInDb);
         bcrypt.compare.mockResolvedValue(true);
-        
+
         const result = await signinService(email, password);
-        
+
         expect(userModel.getUserProfileByEmail).toHaveBeenCalledTimes(1)
         expect(result).toEqual({ userProfile: mockUserProfile() })
     })
@@ -218,23 +218,40 @@ describe('Testing verifyEmail', () => {
     });
 })
 
-describe('resendEmailVerification with deps', () => {
-  it('should return { success: true } for valid email and userid', async () => {
-    const mockCreateUrlToken = jest.fn().mockReturnValue('mockedURL');
-    const mockSendVerificationEmail = jest.fn().mockResolvedValue();
+describe.only('resendEmailVerification with deps', () => {
+    it('should return { success: true } for valid email and userid', async () => {
+        const mockCreateUrlToken = jest.fn().mockReturnValue('mockedURL');
+        const mockSendVerificationEmail = jest.fn().mockResolvedValue();
+        const mockupdateVerificationJtiByEmail = jest.fn().mockResolvedValue()
+        userModel.findByEmail.mockResolvedValueOnce({ userid: 1, email: 'test@example.com', user_name: "username" })
+        const deps = {
+            createUrlToken: mockCreateUrlToken,
+            sendVerificationEmail: mockSendVerificationEmail,
+            updateVerificationJtiByEmail: mockupdateVerificationJtiByEmail
+        };
 
-    const deps = {
-      createUrlToken: mockCreateUrlToken,
-      sendVerificationEmail: mockSendVerificationEmail
-    };
+        const email = 'test@example.com';
+        const userid = 1;
 
-    const email = 'test@example.com';
-    const userid = 1;
+        const result = await resendEmailVerification(email, userid, deps);
 
-    const result = await resendEmailVerification(email, userid, deps);
+        expect(result).toEqual({ success: true });
+        expect(mockCreateUrlToken).toHaveBeenCalledTimes(1);
+        expect(mockSendVerificationEmail).toHaveBeenCalledTimes(1);
+    });
+    it('should return email not found error for invalid email', async () => {
+        const mockCreateUrlToken = jest.fn().mockReturnValue('mockedURL');
+        const mockSendVerificationEmail = jest.fn().mockResolvedValue();
+        const mockupdateVerificationJtiByEmail = jest.fn().mockResolvedValue()
+        userModel.findByEmail.mockResolvedValueOnce(null)
+        const deps = {
+            createUrlToken: mockCreateUrlToken,
+            sendVerificationEmail: mockSendVerificationEmail,
+            updateVerificationJtiByEmail: mockupdateVerificationJtiByEmail
+        };
+        const email = 'test@example.com';
+        const userid = 1;
 
-    expect(result).toEqual({ success: true });
-    expect(mockCreateUrlToken).toHaveBeenCalledTimes(1);
-    expect(mockSendVerificationEmail).toHaveBeenCalledTimes(1);
-  });
+        await expect(resendEmailVerification(email, userid, deps)).rejects.toThrow("Email not found.");
+    })
 })
