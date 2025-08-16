@@ -1,3 +1,19 @@
+
+
+const jwt = require('jsonwebtoken');
+const db = require('../../utils/mockDb');
+const sgMail = require('@sendgrid/mail');
+const bcrypt = require('bcrypt')
+
+const userModel = require('../../../models/user.model')
+const authService = require('../../../services/auth.service');
+const { registerUser, createUrlToken, sendVerificationEmail, signinService, verifyEmail, resendEmailVerification } = require('../../../services/auth.service')
+const { mockCreateUserRes, mockUserProfile } = require('../../utils/factories/mockUser')
+const { mockUserRegistrationInput } = require('../../utils/factories/mockUserInput')
+const { EmailTakenError } = require('../../../errors/EmailTakenError')
+const { UsernameTakenError } = require('../../../errors/UsernameTakenError');
+const { BaseError } = require('../../../errors/BaseError');
+
 jest.mock('../../../models/user.model', () => ({
     getJtiForUser: jest.fn().mockResolvedValue("someJTI"),
     setEmailVerified: jest.fn().mockResolvedValue({
@@ -8,10 +24,14 @@ jest.mock('../../../models/user.model', () => ({
     findByEmail: jest.fn(),
     findByUsername: jest.fn(),
     createUser: jest.fn(),
-    findUserWithPasswordByEmail: jest.fn()
+    findUserWithPasswordByEmail: jest.fn(),
+    getUserProfileByEmail: jest.fn().mockImplementation(() => Promise.resolve(mockUserProfile()))
 }))
 jest.mock('@sendgrid/mail');
-jest.mock('bcrypt');
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockResolvedValue('mock-hash'),
+  compare: jest.fn().mockResolvedValue(true)
+}));
 jest.mock('../../../database/index', () => require('../../utils/mockDb'));
 jest.mock('jsonwebtoken', () => {
     const realJWT = jest.requireActual('jsonwebtoken');
@@ -21,19 +41,6 @@ jest.mock('jsonwebtoken', () => {
     };
 });
 
-const jwt = require('jsonwebtoken');
-const db = require('../../utils/mockDb');
-const sgMail = require('@sendgrid/mail');
-const bcrypt = require('bcrypt')
-
-const userModel = require('../../../models/user.model')
-const authService = require('../../../services/auth.service');
-const { registerUser, createUrlToken, sendVerificationEmail, signinService, verifyEmail, resendEmailVerification } = require('../../../services/auth.service')
-const { mockCreateUserRes } = require('../../utils/factories/mockUser')
-const { mockUserRegistrationInput } = require('../../utils/factories/mockUserInput')
-const { EmailTakenError } = require('../../../errors/EmailTakenError')
-const { UsernameTakenError } = require('../../../errors/UsernameTakenError');
-const { BaseError } = require('../../../errors/BaseError');
 
 userModel.findByEmail.mockImplementation((email) => {
     const existingEmail = 'test1@gmail.com' //email existing in database
@@ -93,7 +100,7 @@ describe('Testing createUrlToken', () => {
 
         const urlToken = new URL(createUrlToken(userInfo.email, userInfo.userid, mockJti))
 
-        expect(urlToken.origin + urlToken.pathname).toBe("https://miseathome.ca/auth")
+        expect(urlToken.origin + urlToken.pathname).toBe("https://miseathome.ca/auth/token-verify")
         expect(urlToken.toString()).toContain('?token=');
 
         const token = urlToken.searchParams.get('token')
@@ -156,10 +163,11 @@ describe('Testing signinService', () => {
         // Mock the DB and bcrypt dependencies
         userModel.findUserWithPasswordByEmail.mockResolvedValue(passwordInDb);
         bcrypt.compare.mockResolvedValue(true);
-
+        
         const result = await signinService(email, password);
-
-        expect(result).toEqual({ success: true, message: "Signin successful." })
+        
+        expect(userModel.getUserProfileByEmail).toHaveBeenCalledTimes(1)
+        expect(result).toEqual({ userProfile: mockUserProfile() })
     })
     it('should throw when email is missing', async () => {
         const email = ''

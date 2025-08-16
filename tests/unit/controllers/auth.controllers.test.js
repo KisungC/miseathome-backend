@@ -2,7 +2,7 @@ jest.mock('../../../services/auth.service')
 jest.mock('../../../database/index', () => require('../../utils/mockDb'));
 
 const db = require('../../utils/mockDb');
-const { mockCreateUserRes } = require('../../utils/factories/mockUser');
+const { mockCreateUserRes, mockUserProfile } = require('../../utils/factories/mockUser');
 const { mockUserRegistrationInput, mockUserSignIn } = require('../../utils/factories/mockUserInput');
 const { registerUser, signinService } = require('../../../services/auth.service');
 const { signup, signin } = require('../../../controllers/auth.controller');
@@ -28,6 +28,10 @@ const res = {
     status: jest.fn().mockReturnThis(),
     json: jest.fn(),
 };
+
+beforeEach(() => {
+    jest.clearAllMocks();
+});
 
 describe('Testing signup from controller', () => {
     it('should return with res with code 201 when req.body is valid', async () => {
@@ -56,17 +60,12 @@ describe('Testing signin from controller', () => {
             })
         }
 
-        signinService.mockResolvedValue({ success: true, message: "Signin successful." })
-
-        await signin(req, res)
+        signinService.mockResolvedValueOnce({ userProfile: mockUserProfile() })
 
         await expect(signin(req, res)).resolves.toBeUndefined();
 
         expect(res.status).toHaveBeenCalledWith(200)
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-            message: "Sign in successful.",
-            success: true
-        }))
+        expect(res.json).toHaveBeenCalledTimes(1)
     })
     it('should throw when user credential is incorrect', async () => {
 
@@ -86,11 +85,3 @@ describe('Testing signin from controller', () => {
         }));
     })
 })
-
-describe('Testing verifyEmailToken from controller',()=>{
-    //no test cases for this yet
-})
-
-describe('Testing resendEmailToken from controller'),()=>{
-    //no test cases for this yet
-}

@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified, findUserWithPasswordByEmail } = require('../models/user.model');
+const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified, findUserWithPasswordByEmail, getUserProfileByEmail } = require('../models/user.model');
 const { EmailTakenError } = require('../errors/EmailTakenError')
 const { UsernameTakenError } = require('../errors/UsernameTakenError')
 const { EmptyEmailError } = require('../errors/EmptyEmailError');
@@ -47,7 +47,7 @@ const registerUser = async (userData) => {
   }
 };
 
-const createUrlToken = (email, userid, jti) => {
+const createUrlToken = (email, userid, jti, options={expiresIn:'20m'}) => {
   if (!email) {
     throw new EmptyEmailError()
   }
@@ -60,14 +60,14 @@ const createUrlToken = (email, userid, jti) => {
     throw new BaseError("internal error: jti not found", 500, "JTI_NOT_FOUND");
   }
 
-  const baseUrl = new URL('https://miseathome.ca/auth')
+  const baseUrl = new URL('https://miseathome.ca/auth/token-verify')
 
   const tokenJson = {
     userid: userid,
     email: email,
   }
 
-  const token = jwt.sign(tokenJson, process.env.JWT_SECRET_KEY, { expiresIn: '20m', jwtid: jti })
+  const token = jwt.sign(tokenJson, process.env.JWT_SECRET_KEY, { ...options, jwtid: jti })
 
   baseUrl.searchParams.append('token', token)
 
@@ -127,7 +127,7 @@ const resendEmailVerification = async(email, userid, deps = { createUrlToken, se
     const jti = uuidv4()
     const tokenUrl = deps.createUrlToken(email, userid,jti)
     await deps.sendVerificationEmail(email,tokenUrl)
-
+    
     return {success:true}
   }catch(err)
   {
@@ -144,9 +144,10 @@ const signinService = async(email,password) =>{
     const dbPassword = await findUserWithPasswordByEmail(email)
     const isMatch = await bcrypt.compare(password, dbPassword)
 
-    //load user profile here
+    //load user profile 
+    const userProfile = await getUserProfileByEmail(email)
 
-    if(isMatch) return {success:true, message: "Signin successful."}
+    if(isMatch) return {userProfile: userProfile}
 
     throw new BaseError("Sign in unsuccessful.",400, "AUTHENTICATION_UNSUCCESSFUL")
   }catch(err){
