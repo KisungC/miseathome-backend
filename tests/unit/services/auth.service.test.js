@@ -1,5 +1,3 @@
-
-
 const jwt = require('jsonwebtoken');
 const db = require('../../utils/mockDb');
 const sgMail = require('@sendgrid/mail');

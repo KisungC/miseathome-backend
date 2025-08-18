@@ -3,7 +3,6 @@ const app = require("../../app")
 const db = require('../../database/index')
 const { mockUserProfile } = require("../utils/factories/mockUser")
 const sgMail = require("../__mocks__/@sendgrid/mail")
-const authController = require("../../controllers/auth.controller")
 const authService = require("../../services/auth.service")
 const { mockUserRegistrationInput } = require("../utils/factories/mockUserInput")
 const { v4: uuidv4 } = require('uuid');
@@ -250,7 +249,7 @@ describe('POST /auth/token-verify', () => {
     })
 })
 
-describe.only('POST /auth/resend-token', () => {
+describe('POST /auth/resend-token', () => {
     it('should send a valid link to the users email', async () => {
 
         const previousJTI = await db.one("SELECT jti FROM users WHERE userid = $1", [testUsers[0].userid])

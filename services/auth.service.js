@@ -60,7 +60,7 @@ const createUrlToken = (email, userid, jti, options={expiresIn:'20m'}) => {
     throw new BaseError("internal error: jti not found", 500, "JTI_NOT_FOUND");
   }
 
-  const baseUrl = new URL('https://miseathome.ca/auth/token-verify')
+  const baseUrl = new URL(`${process.env.DEV_FRONTEND_BASE_URL}/auth/token-verify`)
 
   const tokenJson = {
     userid: userid,
