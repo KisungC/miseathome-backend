@@ -155,12 +155,20 @@ const signinService = async(email,password) =>{
     //load user profile 
     const userProfile = await getUserProfileByEmail(email)
 
-    if(isMatch) return {userProfile: userProfile}
+    const signinToken = generateJwt({userif:userProfile.userid})
+
+    if(isMatch) return {userProfile: userProfile, accessToken: signinToken}
 
     throw new BaseError("Sign in unsuccessful.",400, "AUTHENTICATION_UNSUCCESSFUL")
   }catch(err){
     throw err
   }
+}
+
+const generateJwt = (payload, expiresIn = "15m")=>{
+  const token = jwt.sign(payload, process.env.JWT_SECRET_KEY,{expiresIn: expiresIn})
+
+  return token
 }
 
 module.exports = {

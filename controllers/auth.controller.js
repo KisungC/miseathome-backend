@@ -44,7 +44,7 @@ const signin = async (req, res) => {
   try {
     const {email, password} = req.body
     const result = await signinService(email,password)
-    sendSuccessResponse(res, 200, "Sign in successful.", result)
+    sendSuccessResponse(res, 200, "Sign in successful.", result.userProfile,result.accessToken)
   } catch (err) {
     console.error('Sign in authentication failed.', err)
     if (handleBaseError(res, err)) return
