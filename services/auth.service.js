@@ -166,9 +166,7 @@ const signinService = async(email,password) =>{
 }
 
 const generateJwt = (payload, expiresIn = "15m")=>{
-  const token = jwt.sign(payload, process.env.JWT_SECRET_KEY,{expiresIn: expiresIn})
-
-  return token
+  return jwt.sign(payload, process.env.JWT_SECRET_KEY,{expiresIn: expiresIn})
 }
 
 module.exports = {
