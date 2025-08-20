@@ -33,7 +33,18 @@ const findByEmail = async (email) => {
 const getUserProfileByEmail = async (email) => {
     try {
         const query = `SELECT userid, user_name, first_name, last_name, skill_level, email_verified FROM users WHERE email = $1`
-        const result = await db.oneOrNone(query, [email])
+        const result = await db.one(query, [email])
+        return result
+    } catch (err) {
+        console.error('DB Error', err)
+        throw err;
+    }
+}
+
+const getUserProfileById = async (id) => {
+    try {
+        const query = `SELECT userid, user_name, first_name, last_name, skill_level, email_verified FROM users WHERE userid = $1`
+        const result = await db.one(query, [id])
         return result
     } catch (err) {
         console.error('DB Error', err)
@@ -115,5 +126,6 @@ module.exports = {
     setEmailVerified,
     findUserWithPasswordByEmail,
     getUserProfileByEmail,
-    updateVerificationJtiByEmail
+    updateVerificationJtiByEmail,
+    getUserProfileById
 }

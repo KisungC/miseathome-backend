@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-const { findByEmail, findByUsername, createUser, getJtiForUser, setEmailVerified, findUserWithPasswordByEmail, getUserProfileByEmail, updateVerificationJtiByEmail } = require('../models/user.model');
+const { findByEmail, findByUsername, createUser, getJtiForUser, getUserProfileById, setEmailVerified, findUserWithPasswordByEmail, getUserProfileByEmail, updateVerificationJtiByEmail } = require('../models/user.model');
 const { EmailTakenError } = require('../errors/EmailTakenError')
 const { UsernameTakenError } = require('../errors/UsernameTakenError')
 const { EmptyEmailError } = require('../errors/EmptyEmailError');
@@ -115,7 +115,11 @@ const verifyEmail = async (token) => {
       throw new BaseError('Token is invalid or already used.', 401, 'INVALID_JTI')
     }
     await setEmailVerified(userid)
-    return { success: true, userid: userid }
+    const userProfile = await getUserProfileById(userid)
+    if(!userProfile){
+      throw new BaseError('Unable to get user profile.', 500, 'USER_PROFILE_FETCH_FAILED')
+    }
+    return userProfile
   } catch (err) {
     if (err.name === 'TokenExpiredError') throw new BaseError("Link is expired.", 401, "TOKEN_EXPIRED")
     throw err

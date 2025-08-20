@@ -17,8 +17,9 @@ const signup = async (req, res) => {
 
 const verifyEmailToken = async (req, res) => {
   try {
-    const result = await verifyEmail(req.query.token)
-    sendSuccessResponse(res, 200, "User successfully verified", { userid: result.userid })
+    const result = await verifyEmail(req.body.token)
+
+    sendSuccessResponse(res, 200, "User successfully verified",  result )
     //might need to update user profile in the future
   } catch (err) {
     console.error('Email verification error:', err);
