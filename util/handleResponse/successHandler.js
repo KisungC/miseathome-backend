@@ -1,6 +1,6 @@
 const sendSuccessResponse = (res, code, message, data = {}, token, maxAge = 15) => {
   if (token) {
-    res.cookie("accessToken", token, {
+    res.cookie("refreshToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",

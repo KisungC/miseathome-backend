@@ -79,7 +79,7 @@ const findUserWithPasswordByEmail = async (email) => {
     }
 }
 
-const updateVerificationJtiByEmail = async (userid, jti) => {
+const updateVerificationJtiByUserId = async (userid, jti) => {
     try {
         const query = `UPDATE users SET jti = $1 WHERE userid = $2`
         await db.none(query, [jti, userid])
@@ -126,6 +126,6 @@ module.exports = {
     setEmailVerified,
     findUserWithPasswordByEmail,
     getUserProfileByEmail,
-    updateVerificationJtiByEmail,
+    updateVerificationJtiByUserId,
     getUserProfileById
 }

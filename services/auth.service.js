@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-const { findByEmail, findByUsername, createUser, getJtiForUser, getUserProfileById, setEmailVerified, findUserWithPasswordByEmail, getUserProfileByEmail, updateVerificationJtiByEmail } = require('../models/user.model');
+const { findByEmail, findByUsername, createUser, getJtiForUser, getUserProfileById, setEmailVerified, findUserWithPasswordByEmail, getUserProfileByEmail, updateVerificationJtiByUserId } = require('../models/user.model');
 const { EmailTakenError } = require('../errors/EmailTakenError')
 const { UsernameTakenError } = require('../errors/UsernameTakenError')
 const { EmptyEmailError } = require('../errors/EmptyEmailError');
@@ -126,14 +126,14 @@ const verifyEmail = async (token) => {
   }
 }
 
-const resendEmailVerification = async(email, userid, deps = { createUrlToken, sendVerificationEmail, updateVerificationJtiByEmail }) =>{
+const resendEmailVerification = async(email, userid, deps = { createUrlToken, sendVerificationEmail, updateVerificationJtiByUserId }) =>{
   try{
     const emailExists = await findByEmail(email)
     if(!emailExists) throw new BaseError("Email not found.",400,"EMAIL_DOES_NOT_EXIST")
     const jti = uuidv4()
     const tokenUrl = deps.createUrlToken(email, userid,jti)
     await deps.sendVerificationEmail(email,tokenUrl)
-    await deps.updateVerificationJtiByEmail(userid, jti)
+    await deps.updateVerificationJtiByUserId(userid, jti)
 
     return {success:true}
   }catch(err)
@@ -155,9 +155,12 @@ const signinService = async(email,password) =>{
     //load user profile 
     const userProfile = await getUserProfileByEmail(email)
 
-    const signinToken = generateJwt({userif:userProfile.userid})
+    const accessToken = generateJwt({userid:userProfile.userid})
+    const refreshToken = generateJwt({userid:userProfile.userid}, "7d")
 
-    if(isMatch) return {userProfile: userProfile, accessToken: signinToken}
+    userProfile.accessToken = accessToken
+
+    if(isMatch) return {userProfile: userProfile, refreshToken: refreshToken}
 
     throw new BaseError("Sign in unsuccessful.",400, "AUTHENTICATION_UNSUCCESSFUL")
   }catch(err){
