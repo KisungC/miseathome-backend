@@ -23,11 +23,15 @@ jest.mock('../../../models/user.model', () => ({
     findByUsername: jest.fn(),
     createUser: jest.fn(),
     findUserWithPasswordByEmail: jest.fn(),
-    getUserProfileByEmail: jest.fn().mockImplementation(() => Promise.resolve(mockUserProfile())),
-    getUserProfileById: jest.fn().mockImplementation(()=> {
-        const {accessToken, ...rest} = mockUserProfile()
+    getUserProfileByEmail: jest.fn().mockImplementation(() => {
+        const {accessToken,...rest} = mockUserProfile()
+        return Promise.resolve(rest);
+    }),
+    getUserProfileById: jest.fn().mockImplementation(() => {
+        const { accessToken, ...rest } = mockUserProfile()
         return Promise.resolve(rest)
-    })
+    }),
+    getEmailVerifiedByUserId: jest.fn().mockResolvedValue()
 }))
 jest.mock('@sendgrid/mail');
 jest.mock('bcrypt', () => ({
@@ -108,7 +112,7 @@ describe('Testing createUrlToken', () => {
         const token = urlToken.searchParams.get('token')
         expect(token).toBeDefined();
 
-        const decoded = jwt.verify(token,process.env.JWT_SECRET_KEY)
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY)
 
         expect(decoded).toMatchObject({
             email: userInfo.email,
@@ -157,7 +161,10 @@ describe('Testing sendVerificationEmail', () => {
     })
 })
 
-describe('Testing signinService', () => {
+describe.only('Testing signinService', () => {
+    beforeEach(() => {
+        userModel.getUserProfileByEmail.mockClear();
+    });
     it('should sign in successfully if email and password is correct', async () => {
         const email = "existing@email.com";
         const password = "userTypedPassword";
@@ -166,12 +173,48 @@ describe('Testing signinService', () => {
         // Mock the DB and bcrypt dependencies
         userModel.findUserWithPasswordByEmail.mockResolvedValue(passwordInDb);
         bcrypt.compare.mockResolvedValue(true);
+        userModel.getEmailVerifiedByUserId.mockResolvedValue()
+
+        const result = await signinService(email, password);
+
+        expect(userModel.getUserProfileByEmail).toHaveBeenCalledTimes(1)
+        expect(Object.keys(result)).toEqual(["userProfile", "refreshToken"])
+    })
+    it('should sign in successfully if email and password is correct but no access token when email is NOT verified', async () => {
+        const email = "existing@email.com";
+        const password = "userTypedPassword";
+        const passwordInDb = "hashedPasswordInDb";
+
+        // Mock the DB and bcrypt dependencies
+        userModel.findUserWithPasswordByEmail.mockResolvedValue(passwordInDb);
+        bcrypt.compare.mockResolvedValue(true);
+        userModel.getEmailVerifiedByUserId.mockResolvedValue(false)
+
+        const result = await signinService(email, password);
+        console.log(result.userProfile)
+
+        expect(userModel.getUserProfileByEmail).toHaveBeenCalledTimes(1)
+        expect(Object.keys(result)).toEqual(["userProfile", "refreshToken"])
+        expect(Object.keys(result.userProfile)).toEqual(["userid", "user_name", "first_name", "last_name", "skill_level"])
+
+    })
+    it('should sign in successfully if email and password is correct with access token when email is verified', async () => {
+        const email = "existing@email.com";
+        const password = "userTypedPassword";
+        const passwordInDb = "hashedPasswordInDb";
+
+        // Mock the DB and bcrypt dependencies
+        userModel.findUserWithPasswordByEmail.mockResolvedValue(passwordInDb);
+        bcrypt.compare.mockResolvedValue(true);
+        userModel.getEmailVerifiedByUserId.mockResolvedValue(true)
+        userModel.getUserProfileByEmail.mockResolvedValueOnce(mockUserProfile())
 
         const result = await signinService(email, password);
 
         expect(userModel.getUserProfileByEmail).toHaveBeenCalledTimes(1)
         expect(Object.keys(result)).toEqual(["userProfile", "refreshToken"])
         expect(Object.keys(result.userProfile)).toEqual(["userid", "user_name", "first_name", "last_name", "skill_level", "accessToken"])
+
     })
     it('should throw when email is missing', async () => {
         const email = ''
@@ -198,9 +241,13 @@ describe('Testing verifyEmail', () => {
 
         jwt.verify.mockReturnValueOnce({ userid: 1, jti: "someJTI" })
 
+        const expected = mockUserProfile()
+
         const result = await verifyEmail(validToken)
 
-        expect(result).toEqual({ success: true, userid: 1 })
+        result.accessToken = "jwtToken"
+
+        expect(result).toEqual(expected)
     })
     it('should return error code 401 if the token is missing', async () => {
         await expect(verifyEmail(null)).rejects.toThrow('Internal server error: Token is required.')
@@ -292,9 +339,9 @@ describe("Testing generateJwt", () => {
         expect(decoded.object1).toEqual("obj1")
         expect(decoded.object2).toEqual("obj2")
     })
-    it('should throw token expired error if expiration date is passed', async() => {
+    it('should throw token expired error if expiration date is passed', async () => {
         const payload = { object1: "obj1", object2: "obj2" }
-        const token = authService.generateJwt(payload, {expiresIn:'1s'})
+        const token = authService.generateJwt(payload, { expiresIn: '1s' })
 
         await new Promise(resolve => setTimeout(resolve, 2000));
 

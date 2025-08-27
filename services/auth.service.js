@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-const { findByEmail, findByUsername, createUser, getJtiForUser, getUserProfileById, setEmailVerified, findUserWithPasswordByEmail, getUserProfileByEmail, updateVerificationJtiByUserId } = require('../models/user.model');
+const { findByEmail, findByUsername, createUser, getJtiForUser, getUserProfileById, setEmailVerified, findUserWithPasswordByEmail, getUserProfileByEmail, updateVerificationJtiByUserId, getEmailVerifiedByUserId } = require('../models/user.model');
 const { EmailTakenError } = require('../errors/EmailTakenError')
 const { UsernameTakenError } = require('../errors/UsernameTakenError')
 const { EmptyEmailError } = require('../errors/EmptyEmailError');
@@ -47,7 +47,7 @@ const registerUser = async (userData) => {
   }
 };
 
-const createUrlToken = (email, userid, jti, options = {expiresIn:"20m"}) => {
+const createUrlToken = (email, userid, jti, options = { expiresIn: "20m" }) => {
   if (!email) {
     throw new EmptyEmailError()
   }
@@ -152,16 +152,24 @@ const signinService = async (email, password) => {
     if (!dbPassword) throw new BaseError("Sign in unsuccessful.", 400, "AUTHENTICATION_UNSUCCESSFUL")
     const isMatch = await bcrypt.compare(password, dbPassword)
 
+
     //load user profile 
     const userProfile = await getUserProfileByEmail(email)
 
-    const accessToken = generateJwt({ userid: userProfile.userid })
-    const refreshToken = generateJwt({ userid: userProfile.userid }, { expiresIn: "7d" })
+    if (isMatch) {
+      const isVerified = await getEmailVerifiedByUserId(userProfile.userid)
+      const refreshToken = generateJwt({ userid: userProfile.userid }, { expiresIn: "7d" })
 
-    userProfile.accessToken = accessToken
+      if (isVerified) {
+        const accessToken = generateJwt({ userid: userProfile.userid })
+        userProfile.accessToken = accessToken
 
-    if (isMatch) return { userProfile: userProfile, refreshToken: refreshToken }
-
+        return {userProfile: userProfile, refreshToken: refreshToken}
+      }
+      else{
+        return {userProfile: userProfile, refreshToken: refreshToken}
+      }
+    }
     throw new BaseError("Sign in unsuccessful.", 400, "AUTHENTICATION_UNSUCCESSFUL")
   } catch (err) {
     throw err
@@ -169,9 +177,6 @@ const signinService = async (email, password) => {
 }
 
 const generateJwt = (payload, options = {}) => {
-
-  
-
   return jwt.sign(payload, process.env.JWT_SECRET_KEY,
     Object.fromEntries(
       Object.entries(options).filter(([_, v]) => v !== undefined)

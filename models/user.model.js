@@ -116,7 +116,16 @@ const setEmailVerified = async (userid) => {
     }
 }
 
-//implement get user profile (exclude email)
+const getEmailVerifiedByUserId = async (userid) => {
+    try {
+        const query = `SELECT email_verified FROM users WHERE userid = $1`
+        const result = await db.one(query, [userid])
+        return result
+    } catch (err) {
+        console.error('DB Error', err)
+        throw err
+    }
+}
 
 module.exports = {
     createUser,
@@ -127,5 +136,6 @@ module.exports = {
     findUserWithPasswordByEmail,
     getUserProfileByEmail,
     updateVerificationJtiByUserId,
-    getUserProfileById
+    getUserProfileById,
+    getEmailVerifiedByUserId
 }
