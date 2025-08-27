@@ -16,9 +16,9 @@ const { BaseError } = require('../errors/BaseError');
 
 const registerUser = async (userData) => {
   try {
-    if(!userData) {
-      throw new BaseError("Server error! please try again later.",500,"UNABLE TO GET REQ.BODY")
-    } 
+    if (!userData) {
+      throw new BaseError("Server error! please try again later.", 500, "UNABLE TO GET REQ.BODY")
+    }
     const existingEmail = await findByEmail(userData.email)
     if (existingEmail) {
       throw new EmailTakenError()
@@ -37,7 +37,7 @@ const registerUser = async (userData) => {
 
     const { email, userid } = res
 
-    const urlToken = createUrlToken(email,userid, jti)
+    const urlToken = createUrlToken(email, userid, jti)
 
     await sendVerificationEmail(email, urlToken)
 
@@ -47,7 +47,7 @@ const registerUser = async (userData) => {
   }
 };
 
-const createUrlToken = (email, userid, jti, options={expiresIn:'20m'}) => {
+const createUrlToken = (email, userid, jti, options = {expiresIn:"20m"}) => {
   if (!email) {
     throw new EmptyEmailError()
   }
@@ -60,6 +60,7 @@ const createUrlToken = (email, userid, jti, options={expiresIn:'20m'}) => {
     throw new BaseError("internal error: jti not found", 500, "JTI_NOT_FOUND");
   }
 
+
   const baseUrl = new URL(`${process.env.DEV_FRONTEND_BASE_URL}/auth/token-verify`)
 
   const tokenJson = {
@@ -67,7 +68,9 @@ const createUrlToken = (email, userid, jti, options={expiresIn:'20m'}) => {
     email: email,
   }
 
-  const token = jwt.sign(tokenJson, process.env.JWT_SECRET_KEY, { ...options, jwtid: jti })
+  options.jwtid = jti
+
+  const token = generateJwt(tokenJson, options, jti)
 
   baseUrl.searchParams.append('token', token)
 
@@ -105,9 +108,8 @@ const sendVerificationEmail = async (email, url) => {
 
 const verifyEmail = async (token) => {
   try {
-    if(!token)
-    {
-      throw new BaseError('Internal server error: Token is required.',401,'TOKEN_MISSING')
+    if (!token) {
+      throw new BaseError('Internal server error: Token is required.', 401, 'TOKEN_MISSING')
     }
     const { userid, jti } = jwt.verify(token, process.env.JWT_SECRET_KEY)
     const storedJti = await getJtiForUser(userid)
@@ -116,7 +118,7 @@ const verifyEmail = async (token) => {
     }
     await setEmailVerified(userid)
     const userProfile = await getUserProfileById(userid)
-    if(!userProfile){
+    if (!userProfile) {
       throw new BaseError('Unable to get user profile.', 500, 'USER_PROFILE_FETCH_FAILED')
     }
     return userProfile
@@ -126,50 +128,54 @@ const verifyEmail = async (token) => {
   }
 }
 
-const resendEmailVerification = async(email, userid, deps = { createUrlToken, sendVerificationEmail, updateVerificationJtiByUserId }) =>{
-  try{
+const resendEmailVerification = async (email, userid, deps = { createUrlToken, sendVerificationEmail, updateVerificationJtiByUserId }) => {
+  try {
     const emailExists = await findByEmail(email)
-    if(!emailExists) throw new BaseError("Email not found.",400,"EMAIL_DOES_NOT_EXIST")
+    if (!emailExists) throw new BaseError("Email not found.", 400, "EMAIL_DOES_NOT_EXIST")
     const jti = uuidv4()
-    const tokenUrl = deps.createUrlToken(email, userid,jti)
-    await deps.sendVerificationEmail(email,tokenUrl)
+    const tokenUrl = deps.createUrlToken(email, userid, jti)
+    await deps.sendVerificationEmail(email, tokenUrl)
     await deps.updateVerificationJtiByUserId(userid, jti)
 
-    return {success:true}
-  }catch(err)
-  {
+    return { success: true }
+  } catch (err) {
     throw err
   }
 }
 
-const signinService = async(email,password) =>{
-  if(!email || !password)
-  {
-    throw new BaseError('Email and password are required.',400,"EMAIL_PASSWORD_MISSING")
+const signinService = async (email, password) => {
+  if (!email || !password) {
+    throw new BaseError('Email and password are required.', 400, "EMAIL_PASSWORD_MISSING")
   }
-  try{
+  try {
     const dbPassword = await findUserWithPasswordByEmail(email)
-    if(!dbPassword) throw new BaseError("Sign in unsuccessful.",400, "AUTHENTICATION_UNSUCCESSFUL")
+    if (!dbPassword) throw new BaseError("Sign in unsuccessful.", 400, "AUTHENTICATION_UNSUCCESSFUL")
     const isMatch = await bcrypt.compare(password, dbPassword)
 
     //load user profile 
     const userProfile = await getUserProfileByEmail(email)
 
-    const accessToken = generateJwt({userid:userProfile.userid})
-    const refreshToken = generateJwt({userid:userProfile.userid}, "7d")
+    const accessToken = generateJwt({ userid: userProfile.userid })
+    const refreshToken = generateJwt({ userid: userProfile.userid }, { expiresIn: "7d" })
 
     userProfile.accessToken = accessToken
 
-    if(isMatch) return {userProfile: userProfile, refreshToken: refreshToken}
+    if (isMatch) return { userProfile: userProfile, refreshToken: refreshToken }
 
-    throw new BaseError("Sign in unsuccessful.",400, "AUTHENTICATION_UNSUCCESSFUL")
-  }catch(err){
+    throw new BaseError("Sign in unsuccessful.", 400, "AUTHENTICATION_UNSUCCESSFUL")
+  } catch (err) {
     throw err
   }
 }
 
-const generateJwt = (payload, expiresIn = "15m")=>{
-  return jwt.sign(payload, process.env.JWT_SECRET_KEY,{expiresIn: expiresIn})
+const generateJwt = (payload, options = {}) => {
+
+  
+
+  return jwt.sign(payload, process.env.JWT_SECRET_KEY,
+    Object.fromEntries(
+      Object.entries(options).filter(([_, v]) => v !== undefined)
+    ));
 }
 
 module.exports = {
@@ -178,5 +184,6 @@ module.exports = {
   sendVerificationEmail,
   verifyEmail,
   resendEmailVerification,
-  signinService
+  signinService,
+  generateJwt
 };

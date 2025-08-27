@@ -23,7 +23,11 @@ jest.mock('../../../models/user.model', () => ({
     findByUsername: jest.fn(),
     createUser: jest.fn(),
     findUserWithPasswordByEmail: jest.fn(),
-    getUserProfileByEmail: jest.fn().mockImplementation(() => Promise.resolve(mockUserProfile()))
+    getUserProfileByEmail: jest.fn().mockImplementation(() => Promise.resolve(mockUserProfile())),
+    getUserProfileById: jest.fn().mockImplementation(()=> {
+        const {accessToken, ...rest} = mockUserProfile()
+        return Promise.resolve(rest)
+    })
 }))
 jest.mock('@sendgrid/mail');
 jest.mock('bcrypt', () => ({
@@ -35,7 +39,7 @@ jest.mock('jsonwebtoken', () => {
     const realJWT = jest.requireActual('jsonwebtoken');
     return {
         ...realJWT,
-        verify: jest.fn(),
+        verify: jest.fn((token, secret) => realJWT.verify(token, secret)),
     };
 });
 
@@ -98,19 +102,20 @@ describe('Testing createUrlToken', () => {
 
         const urlToken = new URL(createUrlToken(userInfo.email, userInfo.userid, mockJti))
 
-        expect(urlToken.origin + urlToken.pathname).toBe("https://miseathome.ca/auth/token-verify")
+        expect(urlToken.origin + urlToken.pathname).toBe("http://10.0.0.53:3000/auth/token-verify")
         expect(urlToken.toString()).toContain('?token=');
 
         const token = urlToken.searchParams.get('token')
         expect(token).toBeDefined();
 
-        const decoded = jwt.decode(token)
+        const decoded = jwt.verify(token,process.env.JWT_SECRET_KEY)
 
         expect(decoded).toMatchObject({
             email: userInfo.email,
             userid: userInfo.userid,
-            jti: mockJti
         })
+
+        expect(decoded.jti).toBe(mockJti)
 
         const currentUnixTime = Math.floor(Date.now() / 1000);
         const expectedExpiry = currentUnixTime + (20 * 60);
@@ -165,7 +170,8 @@ describe('Testing signinService', () => {
         const result = await signinService(email, password);
 
         expect(userModel.getUserProfileByEmail).toHaveBeenCalledTimes(1)
-        expect(result).toEqual({ userProfile: mockUserProfile() })
+        expect(Object.keys(result)).toEqual(["userProfile", "refreshToken"])
+        expect(Object.keys(result.userProfile)).toEqual(["userid", "user_name", "first_name", "last_name", "skill_level", "accessToken"])
     })
     it('should throw when email is missing', async () => {
         const email = ''
@@ -208,7 +214,7 @@ describe('Testing verifyEmail', () => {
         const expiredError = new Error('jwt expired');
         expiredError.name = 'TokenExpiredError';
 
-        jwt.verify.mockImplementation(() => { throw expiredError });
+        jwt.verify.mockImplementationOnce(() => { throw expiredError });
 
         await expect(verifyEmail('expiredToken'))
             .rejects
@@ -216,16 +222,16 @@ describe('Testing verifyEmail', () => {
     });
 })
 
-describe.only('resendEmailVerification with deps', () => {
+describe('resendEmailVerification with deps', () => {
     it('should return { success: true } for valid email and userid', async () => {
         const mockCreateUrlToken = jest.fn().mockReturnValue('mockedURL');
         const mockSendVerificationEmail = jest.fn().mockResolvedValue();
-        const mockupdateVerificationJtiByEmail = jest.fn().mockResolvedValue()
+        const mockupdateVerificationJtiByUserId = jest.fn().mockResolvedValue()
         userModel.findByEmail.mockResolvedValueOnce({ userid: 1, email: 'test@example.com', user_name: "username" })
         const deps = {
             createUrlToken: mockCreateUrlToken,
             sendVerificationEmail: mockSendVerificationEmail,
-            updateVerificationJtiByEmail: mockupdateVerificationJtiByEmail
+            updateVerificationJtiByUserId: mockupdateVerificationJtiByUserId
         };
 
         const email = 'test@example.com';
@@ -240,16 +246,58 @@ describe.only('resendEmailVerification with deps', () => {
     it('should return email not found error for invalid email', async () => {
         const mockCreateUrlToken = jest.fn().mockReturnValue('mockedURL');
         const mockSendVerificationEmail = jest.fn().mockResolvedValue();
-        const mockupdateVerificationJtiByEmail = jest.fn().mockResolvedValue()
+        const mockupdateVerificationJtiByUserId = jest.fn().mockResolvedValue()
         userModel.findByEmail.mockResolvedValueOnce(null)
         const deps = {
             createUrlToken: mockCreateUrlToken,
             sendVerificationEmail: mockSendVerificationEmail,
-            updateVerificationJtiByEmail: mockupdateVerificationJtiByEmail
+            updateVerificationJtiByUserId: mockupdateVerificationJtiByUserId
         };
         const email = 'test@example.com';
         const userid = 1;
 
         await expect(resendEmailVerification(email, userid, deps)).rejects.toThrow("Email not found.");
+    })
+})
+
+describe("Testing generateJwt", () => {
+    it('should generate jwt token with payload and correct expiration', () => {
+        const payload = { object1: "obj1", object2: "obj2" }
+        const jti = "someJTI"
+
+        const token = authService.generateJwt(payload, { expiresIn: '15m', jwtid: jti })
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY)
+
+        expect(decoded.exp).toBeGreaterThanOrEqual((Math.floor(Date.now() / 1000) + 15 * 60) - 1)
+        expect(decoded.jti).toBe(jti)
+        expect(decoded.object1).toEqual("obj1")
+        expect(decoded.object2).toEqual("obj2")
+    })
+    it('should generate token without jti', () => {
+        const payload = { object1: "obj1", object2: "obj2" }
+
+        const token = authService.generateJwt(payload, { expiresIn: '15m' })
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY)
+
+        expect(decoded.exp).toBeGreaterThanOrEqual((Math.floor(Date.now() / 1000) + 15 * 60) - 1)
+        expect(decoded.object1).toEqual("obj1")
+        expect(decoded.object2).toEqual("obj2")
+    })
+    it('should generate token without jti and expiresIn', () => {
+        const payload = { object1: "obj1", object2: "obj2" }
+
+        const token = authService.generateJwt(payload)
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY)
+
+        expect(decoded.object1).toEqual("obj1")
+        expect(decoded.object2).toEqual("obj2")
+    })
+    it('should throw token expired error if expiration date is passed', async() => {
+        const payload = { object1: "obj1", object2: "obj2" }
+        const token = authService.generateJwt(payload, {expiresIn:'1s'})
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        expect(() => jwt.verify(token, process.env.JWT_SECRET_KEY)).toThrow('jwt expired');
     })
 })

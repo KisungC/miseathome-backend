@@ -18,6 +18,7 @@ const mockUserProfile = (overrides = {}) =>({
   first_name: 'Test',
   last_name: 'User',
   skill_level: 'Beginner',
+  accessToken:"jwtToken",
   ...overrides
 })
 
