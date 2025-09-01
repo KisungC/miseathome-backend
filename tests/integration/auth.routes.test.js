@@ -202,11 +202,16 @@ describe('POST /auth/token-verify', () => {
 
         const token = new URL(newUrlToken).searchParams.get('token')
 
+        const req = {
+            "token": token
+        }
+
         const query = `UPDATE users SET jti = $1 WHERE userid = $2`
         await db.none(query, [jti, testUsers[0].userid])
 
         const res = await request(app)
-            .post(`/auth/token-verify?token=${token}`)
+            .post(`/auth/token-verify`)
+            .send(req)
             .expect(200)
 
         expect(res.body).toHaveProperty('message', 'User successfully verified');
@@ -223,13 +228,18 @@ describe('POST /auth/token-verify', () => {
 
         const token = new URL(newUrlToken).searchParams.get('token')
 
+        const req = {
+            "token": token
+        }
+
         const query = `UPDATE users SET jti = $1 WHERE userid = $2`
         await db.none(query, [jti, testUsers[0].userid])
 
         await new Promise(resolve => setTimeout(resolve, 2000)) //wait 2 seconds
 
         const res = await request(app)
-            .post(`/auth/token-verify?token=${token}`)
+            .post(`/auth/token-verify`)
+            .send(req)
             .expect(401)
 
         expect(res.body).toHaveProperty('error', 'Link is expired.');
@@ -243,8 +253,13 @@ describe('POST /auth/token-verify', () => {
 
         const token = new URL(newUrlToken).searchParams.get('token')
 
+        const req = {
+            "token": token
+        }
+
         const res = await request(app)
-            .post(`/auth/token-verify?token=${token}`)
+            .post(`/auth/token-verify`)
+            .send(req)
             .expect(401)
 
         expect(res.body).toHaveProperty('error', 'Token is invalid or already used.');

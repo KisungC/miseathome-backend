@@ -17,7 +17,8 @@ const signup = async (req, res) => {
 
 const verifyEmailToken = async (req, res) => {
   try {
-    const result = await verifyEmail(req.query.token)
+    console.log(req.body)
+    const result = await verifyEmail(req.body.token)
 
     sendSuccessResponse(res, 200, "User successfully verified",  result )
     //might need to update user profile in the future
