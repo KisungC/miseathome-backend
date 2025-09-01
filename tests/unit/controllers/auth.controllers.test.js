@@ -48,7 +48,7 @@ describe('Testing signup from controller', () => {
     })
 })
 
-describe.only('Testing signin from controller', () => {
+describe('Testing signin from controller', () => {
     it('should return success response when email and password is valid', async () => {
         const email = 'existing@email.com'
         const password = 'userPasswordInput'

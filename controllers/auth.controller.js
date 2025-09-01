@@ -17,7 +17,7 @@ const signup = async (req, res) => {
 
 const verifyEmailToken = async (req, res) => {
   try {
-    const result = await verifyEmail(req.body.token)
+    const result = await verifyEmail(req.query.token)
 
     sendSuccessResponse(res, 200, "User successfully verified",  result )
     //might need to update user profile in the future
@@ -43,8 +43,8 @@ const resendEmailToken = async (req, res) => {
 const signin = async (req, res) => {
   try {
     const {email, password} = req.body
-    const result = await signinService(email,password)
-    sendSuccessResponse(res, 200, "Sign in successful.", result.userProfile,result.refreshToken, 10080)
+    const {userProfile,refreshToken} = await signinService(email,password)
+    sendSuccessResponse(res, 200, "Sign in successful.", {userProfile},refreshToken, 10080)
   } catch (err) {
     console.error('Sign in authentication failed.', err)
     if (handleBaseError(res, err)) return

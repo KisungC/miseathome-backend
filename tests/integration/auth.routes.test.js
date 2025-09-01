@@ -136,12 +136,12 @@ describe('POST /auth/signup', () => {
 })
 
 describe('POST /auth/login', () => {
-    it('should return 200 if email and password is valid [no setup]', async () => {
+    it('should return 200 if email and password is valid NOT verified [no setup]', async () => {
         const uniqueValue = Date.now().toString()
         const signupInfo = mockUserRegistrationInput({
             email: `test1@test.com`,
             username: uniqueValue,
-            password:"ValidPass123!"
+            password: "ValidPass123!"
         })
 
         const signupRes = await request(app)
@@ -151,7 +151,7 @@ describe('POST /auth/login', () => {
 
         testUsers.push({ email: signupRes.body.data.email, userid: signupRes.body.data.id })
 
-        console.log(signupRes)
+
 
         const profile = mockUserProfile({
             userid: signupRes.body.data.id,
@@ -159,6 +159,9 @@ describe('POST /auth/login', () => {
             skill_level: "Beginner",
             email_verified: false
         })
+
+        delete profile.accessToken
+
         const res = await request(app)
             .post('/auth/login')
             .send({
@@ -174,6 +177,8 @@ describe('POST /auth/login', () => {
                 userProfile: profile
             }
         });
+        expect(res.headers['set-cookie']).toBeDefined()
+        expect(res.headers['set-cookie'][0]).toMatch(/refreshToken=/)
     })
     it('should return 400 if email and password is wrong [no setup]', async () => {
         const res = await request(app)
@@ -190,8 +195,6 @@ describe('POST /auth/login', () => {
 
 describe('POST /auth/token-verify', () => {
     it('should set email_verified to true after valid token verification', async () => {
-        //create a new user
-
         const jti = uuidv4()
 
         //create a token to insert into db directly
@@ -283,8 +286,8 @@ describe('POST /auth/resend-token', () => {
             .post('/auth/resend-token')
             .send(req)
             .expect(400)
-        
-        expect(res.body).toHaveProperty("error","Email not found.")
+
+        expect(res.body).toHaveProperty("error", "Email not found.")
     })
 })
 

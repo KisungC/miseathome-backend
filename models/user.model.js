@@ -120,7 +120,7 @@ const getEmailVerifiedByUserId = async (userid) => {
     try {
         const query = `SELECT email_verified FROM users WHERE userid = $1`
         const result = await db.one(query, [userid])
-        return result
+        return result.email_verified
     } catch (err) {
         console.error('DB Error', err)
         throw err

@@ -161,7 +161,7 @@ describe('Testing sendVerificationEmail', () => {
     })
 })
 
-describe.only('Testing signinService', () => {
+describe('Testing signinService', () => {
     beforeEach(() => {
         userModel.getUserProfileByEmail.mockClear();
     });
