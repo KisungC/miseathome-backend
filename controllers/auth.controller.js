@@ -1,6 +1,6 @@
 const { handleBaseError, sendErrorResponse } = require("../util/handleResponse/errorHandler")
 const { sendSuccessResponse } = require("../util/handleResponse/successHandler")
-const { registerUser, verifyEmail, resendEmailVerification, signinService } = require('../services/auth.service')
+const { registerUser, verifyEmail, resendEmailVerification, signinService, refreshTokenService } = require('../services/auth.service')
 const { BaseError } = require("../errors/BaseError")
 
 const signup = async (req, res) => {
@@ -53,9 +53,23 @@ const signin = async (req, res) => {
   }
 }
 
+const refreshToken = (req, res) =>{
+  const oldRefreshToken = req.cookies.refreshToken
+  if(!oldRefreshToken) res.status(403).json({error: "User session expired!"})
+  try{
+    const newTokens = refreshTokenService(oldRefreshToken)
+    sendSuccessResponse(res, 200, "Token renewal successful.", {accessToken:newTokens.accessToken}, newTokens.refreshToken, 10080)
+  } catch(err)
+  {
+    if (handleBaseError(res, err)) return
+    sendErrorResponse(res,err)
+  }
+}
+
 module.exports = {
   signup,
   verifyEmailToken,
   resendEmailToken,
-  signin
+  signin,
+  refreshToken
 };
