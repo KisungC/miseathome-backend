@@ -4,8 +4,8 @@ jest.mock('../../../database/index', () => require('../../utils/mockDb'));
 const db = require('../../utils/mockDb');
 const { mockCreateUserRes, mockUserProfile } = require('../../utils/factories/mockUser');
 const { mockUserRegistrationInput, mockUserSignIn } = require('../../utils/factories/mockUserInput');
-const { registerUser, signinService } = require('../../../services/auth.service');
-const { signup, signin } = require('../../../controllers/auth.controller');
+const { registerUser, signinService, refreshTokenService } = require('../../../services/auth.service');
+const { signup, signin, refreshToken } = require('../../../controllers/auth.controller');
 const { BaseError } = require('../../../errors/BaseError');
 
 registerUser.mockImplementation((body) => {
@@ -27,6 +27,7 @@ registerUser.mockImplementation((body) => {
 const res = {
     status: jest.fn().mockReturnThis(),
     json: jest.fn(),
+    cookie: jest.fn()
 };
 
 beforeEach(() => {
@@ -83,5 +84,42 @@ describe('Testing signin from controller', () => {
             error: 'Sign in unsuccessful.',
             code: 'AUTHENTICATION_UNSUCCESSFUL'
         }));
+    })
+})
+
+describe.only("testing refreshToken", () => {
+    it('should send 200 if refreshToken is valid', () => {
+        const req = {
+            cookies: {
+                refreshToken: "oldRefreshToken"
+            }
+        }
+
+        refreshTokenService.mockReturnValue({ accessToken: "AT", refreshToken: "RT" })
+
+        refreshToken(req, res)
+        expect(refreshTokenService).toHaveBeenCalledWith("oldRefreshToken");
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                message: "Token renewal successful.",
+                data: { accessToken: "AT" }
+            })
+        );
+        expect(res.cookie).toHaveBeenCalledWith(
+            "refreshToken",
+            "RT",
+            expect.any(Object)
+        );
+    })
+    it('should send 403 if refresh token is null or undefined',()=>{
+        const req = {
+            cookies:{
+            }
+        }
+        refreshToken(req,res)
+        expect(res.status).toHaveBeenCalledWith(403)
+        expect(res.json).toHaveBeenCalledWith({error:"User session expired!"})
+
     })
 })

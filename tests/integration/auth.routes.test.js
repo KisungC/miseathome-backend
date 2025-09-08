@@ -6,6 +6,7 @@ const sgMail = require("../__mocks__/@sendgrid/mail")
 const authService = require("../../services/auth.service")
 const { mockUserRegistrationInput } = require("../utils/factories/mockUserInput")
 const { v4: uuidv4 } = require('uuid');
+const jwt = require('jsonwebtoken')
 
 let testUsers = []; // store {email, userid} objects
 
@@ -306,3 +307,48 @@ describe('POST /auth/resend-token', () => {
     })
 })
 
+describe.only("POST /refresh-token", () => {
+
+    it('should return a new refresh token and access token [no setup]', async () => {
+        const oldToken = authService.generateJwt({ userid: 2 }, { expiresIn: '5m' })
+
+        const res = await request(app)
+            .post('/auth/refresh-token')
+            .set("Cookie", [`refreshToken=${oldToken}`])
+            .expect(200)
+        expect(res.body).toEqual({
+            message: "Token renewal successful.",
+            success: true,
+            data: {
+                accessToken: expect.any(String)
+            }
+        })
+
+        const cookies = res.headers['set-cookie']
+        expect(cookies).toBeDefined();
+        expect(cookies[0]).toMatch(/^refreshToken=/); // check that refreshToken is set
+        expect(cookies[0]).toContain("HttpOnly");
+        expect(cookies[0]).toContain("Max-Age=604800"); // 7 days
+        expect(cookies[0]).toContain("SameSite=Strict");
+
+    })
+
+    it('should return 500 if cookie is invalid - jwt wrong password [no setup]', async () => {
+        const invalidToken = jwt.sign({ userid: 1 }, "wrongpassword")
+
+        await request(app)
+            .post('/auth/refresh-token')
+            .set("Cookie", [`refreshToken=${invalidToken}`])
+            .expect(500)
+
+    })
+
+    it('should return 403 if cookie is invalid - old token missing [no setup]', async () => {
+
+        const res = await request(app)
+            .post('/auth/refresh-token')
+            .expect(403)
+
+        expect(res.body.error).toBe("User session expired!")
+    })
+})

@@ -178,7 +178,7 @@ const signinService = async (email, password) => {
 
 const refreshTokenService = (oldRefreshToken) => {
   try {
-    const payload = oldRefreshToken.verify(process.env.JWT_SECRET_KEY)
+    const payload = jwt.verify(oldRefreshToken,process.env.JWT_SECRET_KEY)
     const newRefreshToken = generateJwt({userid:payload.userid}, {expiresIn:'7d'})
 
     const newAccessToken = generateJwt({userid:payload.userid}, {expiresIn:'15m'})
@@ -187,7 +187,6 @@ const refreshTokenService = (oldRefreshToken) => {
   } catch (err) {
     throw err
   }
-
 }
 
 const generateJwt = (payload, options = {}) => {
