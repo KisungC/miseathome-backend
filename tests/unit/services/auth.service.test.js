@@ -307,6 +307,19 @@ describe('resendEmailVerification with deps', () => {
     })
 })
 
+describe.only("Testing refreshTokenService", () =>{
+    it('should create 2 new tokens', ()=>{
+        const oldToken = authService.generateJwt({userid: 2},{expiresIn:'1m'})
+        const tokens = authService.refreshTokenService(oldToken)
+
+        expect(Object.keys(tokens)).toEqual(["accessToken","refreshToken"])
+    })
+    it('should throw error when old token is invalid', ()=>{
+        const invalidToken = jwt.sign({userid: 2},'wrongSecret')
+        expect(()=>authService.refreshTokenService(invalidToken)).toThrow()
+    })
+})
+
 describe("Testing generateJwt", () => {
     it('should generate jwt token with payload and correct expiration', () => {
         const payload = { object1: "obj1", object2: "obj2" }

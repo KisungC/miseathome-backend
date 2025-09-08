@@ -161,16 +161,29 @@ const signinService = async (email, password) => {
       const refreshToken = generateJwt({ userid: userProfile.userid }, { expiresIn: "7d" })
 
       if (isVerified) {
-        const accessToken = generateJwt({ userid: userProfile.userid })
+        const accessToken = generateJwt({ userid: userProfile.userid }, {expiresIn:'15m'})
         userProfile.accessToken = accessToken
 
-        return {userProfile: userProfile, refreshToken: refreshToken}
+        return { userProfile: userProfile, refreshToken: refreshToken }
       }
-      else{
-        return {userProfile: userProfile, refreshToken: refreshToken}
+      else {
+        return { userProfile: userProfile, refreshToken: refreshToken } //userProfile without accessToken
       }
     }
     throw new BaseError("Sign in unsuccessful.", 400, "AUTHENTICATION_UNSUCCESSFUL")
+  } catch (err) {
+    throw err
+  }
+}
+
+const refreshTokenService = (oldRefreshToken) => {
+  try {
+    const payload = jwt.verify(oldRefreshToken,process.env.JWT_SECRET_KEY)
+    const newRefreshToken = generateJwt({userid:payload.userid}, {expiresIn:'7d'})
+
+    const newAccessToken = generateJwt({userid:payload.userid}, {expiresIn:'15m'})
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken }
   } catch (err) {
     throw err
   }
@@ -190,5 +203,6 @@ module.exports = {
   verifyEmail,
   resendEmailVerification,
   signinService,
-  generateJwt
+  generateJwt,
+  refreshTokenService
 };
